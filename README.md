@@ -1,4 +1,4 @@
-# Here is resource for Restore Solution.
+# Here is resource for Mango.API Solution.
 
 > [!NOTE]
 > For BE
