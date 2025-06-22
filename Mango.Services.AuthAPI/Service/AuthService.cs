@@ -3,6 +3,7 @@ using Mango.Services.AuthAPI.Models;
 using Mango.Services.AuthAPI.Models.Dto;
 using Mango.Services.AuthAPI.Service.IService;
 using Microsoft.AspNetCore.Identity;
+using System.IdentityModel.Tokens.Jwt;
 
 namespace Mango.Services.AuthAPI.Service
 {
@@ -41,7 +42,7 @@ namespace Mango.Services.AuthAPI.Service
 
         public async Task<LoginResponseDto> Login(LoginRequestDto loginRequestDto)
         {
-            var user = _db.ApplicationUsers.FirstOrDefault(x => x.UserName.ToLower() == loginRequestDto.UserName.ToLower());
+            var user = _db.ApplicationUsers.FirstOrDefault(x => x.UserName.ToLower() == loginRequestDto.Email.ToLower());
 
             var isValid = await _userManager.CheckPasswordAsync(user, loginRequestDto.Password);
 
@@ -51,8 +52,8 @@ namespace Mango.Services.AuthAPI.Service
             }
 
             // if user was found, Generate JWT token
-            //var roles = await _userManager.GetRolesAsync(user);
-            var token = _jwtTokenGenerator.GenerateToken(user);
+            var roles = await _userManager.GetRolesAsync(user);
+            var token = _jwtTokenGenerator.GenerateToken(user, roles);
 
             UserDto userDto = new()
             {
@@ -62,7 +63,7 @@ namespace Mango.Services.AuthAPI.Service
                 PhoneNumber = user.PhoneNumber
             };
 
-            LoginResponseDto loginResponseDto = new LoginResponseDto()
+            LoginResponseDto loginResponseDto = new()
             {
                 User = userDto,
                 Token = token
@@ -99,12 +100,43 @@ namespace Mango.Services.AuthAPI.Service
 
                     return "";
                 }
+                else
+                {
+                    var message = string.Join(",", result.Errors.Select(e => e.Description));
+                    return message;
+                }
             }
             catch (Exception ex)
             {
-                throw new Exception(ex.Message);
+                return ex.Message;
             }
-            return "Error Encountered";
+        }
+
+        public async Task<UserInfoDto> UserInfo(string token)
+        {
+            if (token == null || !token.StartsWith("Bearer "))
+            {
+                return null;
+            }
+            var jwtEncoded = token.Replace("Bearer ", "");
+            var handler = new JwtSecurityTokenHandler();
+            var jwtDecoded = handler.ReadToken(jwtEncoded) as JwtSecurityToken;
+            var claims = jwtDecoded?.Claims.Where(j => j.Type == "email" || j.Type == "role");
+            if (claims == null || !claims.Any())
+            {
+                return null;
+            }
+            var userInfo = new UserInfoDto
+            {
+                Email = claims.FirstOrDefault(c => c.Type == "email")?.Value,
+                Role = claims.FirstOrDefault(c => c.Type == "role")?.Value
+            };
+            return await Task.FromResult(userInfo);
+        }
+
+        public Task<bool> Logout()
+        {
+            return Task.FromResult(true);
         }
     }
 }

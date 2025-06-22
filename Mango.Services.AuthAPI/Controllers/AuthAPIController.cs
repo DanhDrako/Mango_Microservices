@@ -55,5 +55,20 @@ namespace Mango.Services.AuthAPI.Controllers
             }
             return Ok(_response);
         }
+
+        [HttpGet("user-info")]
+        public async Task<IActionResult> UserInfo()
+        {
+            var userInfo = await _authService.UserInfo(Request.Headers.Authorization.ToString());
+            _response.Result = userInfo;
+            return Ok(_response);
+        }
+
+        [HttpPost("logout")]
+        public async Task<IActionResult> Logout()
+        {
+            _ = await _authService.Logout();
+            return Ok(_response);
+        }
     }
 }
