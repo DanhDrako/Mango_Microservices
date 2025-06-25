@@ -409,3 +409,4 @@ Mango.Services.CouponAPI/appsettings.json
 Mango.Services.AuthAPI/appsettings.json
 Mango.Services.ProductAPI/appsettings.json
 Mango.Services.ProductAPI/wwwroot/ProductImages/
+/Mango.Services.ShoppingCartAPI/appsettings.json

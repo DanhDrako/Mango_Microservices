@@ -1,5 +1,4 @@
-﻿using AutoMapper;
-using Mango.Services.ProductAPI.Models.Dto;
+﻿using Mango.Services.ProductAPI.Models.Dto;
 using Mango.Services.ProductAPI.RequestHelpers;
 using Mango.Services.ProductAPI.Service.IService;
 using Microsoft.AspNetCore.Authorization;
@@ -12,12 +11,10 @@ namespace Mango.Services.ProductAPI.Controllers
     public class ProductAPIController : ControllerBase
     {
         private readonly ResponseDto _response;
-        private readonly IMapper _mapper;
         private readonly IProductService _productService;
 
-        public ProductAPIController(IMapper mapper, IProductService productService)
+        public ProductAPIController(IProductService productService)
         {
-            _mapper = mapper;
             _response = new();
             _productService = productService;
         }

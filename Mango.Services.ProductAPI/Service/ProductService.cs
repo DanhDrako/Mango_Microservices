@@ -39,10 +39,17 @@ namespace Mango.Services.ProductAPI.Service
             // 1. Mapper product
             var product = _mapper.Map<Product>(productDto);
 
-            // 2. Save image product
-            if (productDto.Image != null)
+            // 2. Added product if not exist
+            if (productDto.ProductId <= 0)
             {
-                string fileName = product.ProductId + Path.GetExtension(productDto.Image.FileName);
+                _db.Products.Add(product);
+                _db.SaveChanges();
+            }
+
+            // 3. Save image product
+            if (productDto.File != null)
+            {
+                string fileName = product.ProductId + Path.GetExtension(productDto.File.FileName);
                 string filePath = @"wwwroot\ProductImages\" + fileName;
 
                 string path = Path.Combine(Directory.GetCurrentDirectory(), filePath);
@@ -53,7 +60,7 @@ namespace Mango.Services.ProductAPI.Service
                 }
                 using (var stream = new FileStream(path, FileMode.Create))
                 {
-                    await productDto.Image.CopyToAsync(stream);
+                    await productDto.File.CopyToAsync(stream);
                 }
 
                 // Use IHttpContextAccessor to access HttpContext
@@ -64,22 +71,14 @@ namespace Mango.Services.ProductAPI.Service
                 product.ImageUrl = baseUrl + "/ProductImages/" + fileName;
                 product.ImageLocalPath = filePath;
             }
-            else
+            else if (productDto.ImageUrl == null)
             {
                 product.ImageUrl = "https://placehold.co/600x400";
             }
 
-            // 3. Add or update product to database
-            if (productDto.ProductId <= 0)
-            {
-                _db.Products.Add(product);
-                _db.SaveChanges();
-            }
-            else
-            {
-                _db.Products.Update(product);
-                _db.SaveChanges();
-            }
+            // 4. Update to database
+            _db.Products.Update(product);
+            _db.SaveChanges();
 
             var res = _mapper.Map<ProductDto>(product);
             return res;

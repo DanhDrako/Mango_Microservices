@@ -1,4 +1,4 @@
-﻿namespace Mango.Services.ProductAPI.Models.Dto
+﻿namespace Mango.Services.ShoppingCartAPI.Models.Dto
 {
     public class ProductDto
     {
@@ -10,7 +10,5 @@
         public string Brand { get; set; }
         public int QuantityInStock { get; set; }
         public string? ImageUrl { get; set; }
-        public string? ImageLocalPath { get; set; }
-        public IFormFile? File { get; set; }
     }
 }
