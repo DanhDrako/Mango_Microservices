@@ -1,7 +1,9 @@
 ﻿using AutoMapper;
 using Mango.Services.ProductAPI.Data;
+using Mango.Services.ProductAPI.Extensions;
 using Mango.Services.ProductAPI.Models;
 using Mango.Services.ProductAPI.Models.Dto;
+using Mango.Services.ProductAPI.RequestHelpers;
 using Mango.Services.ProductAPI.Service.IService;
 using Microsoft.EntityFrameworkCore;
 
@@ -86,8 +88,29 @@ namespace Mango.Services.ProductAPI.Service
         public async Task<int> DeleteProduct(int id)
         {
             var product = await _db.Products.FindAsync(id) ?? throw new KeyNotFoundException($"Product with ID {id} not found.");
+            if (!string.IsNullOrEmpty(product.ImageLocalPath))
+            {
+                var oldFilePathDirectory = Path.Combine(Directory.GetCurrentDirectory(), product.ImageLocalPath);
+                FileInfo file = new FileInfo(oldFilePathDirectory);
+                if (file.Exists)
+                {
+                    file.Delete();
+                }
+            }
             _db.Products.Remove(product);
             return await _db.SaveChangesAsync();
+        }
+
+        public async Task<Filter> GetFilters()
+        {
+            var types = await _db.Products.Select(p => p.Type).Distinct().ToListAsync();
+            var brands = await _db.Products.Select(p => p.Brand).Distinct().ToListAsync();
+            var filter = new Filter
+            {
+                Types = types,
+                Brands = brands
+            };
+            return filter;
         }
 
         public async Task<ProductDto> GetProductById(int id)
@@ -97,11 +120,25 @@ namespace Mango.Services.ProductAPI.Service
             return res;
         }
 
-        public async Task<IEnumerable<ProductDto>> GetProducts()
+        public async Task<IEnumerable<ProductDto>> GetProducts(ProductParams productParams)
         {
-            IEnumerable<Product> objList = await _db.Products.ToListAsync();
-            var res = _mapper.Map<IEnumerable<ProductDto>>(objList);
-            return res;
+            var query = _db.Products
+            .Sort(productParams.OrderBy)
+            .Search(productParams.SearchTerm)
+            .Filter(productParams.Brands, productParams.Types)
+            .AsQueryable();
+
+            // Fetch paginated list of products
+            var products = await PagedList<Product>.ToPagedList(query, productParams.PageNumber, productParams.PageSize);
+
+            // Map Product entities to ProductDto
+            var productDtos = _mapper.Map<IEnumerable<ProductDto>>(products);
+
+            // Use IHttpContextAccessor to add pagination headers
+            var httpContext = _httpContextAccessor.HttpContext ?? throw new InvalidOperationException("HttpContext is not available.");
+            httpContext.Response.AddPaginationHeaders(products.Metadata);
+
+            return productDtos;
         }
     }
 }

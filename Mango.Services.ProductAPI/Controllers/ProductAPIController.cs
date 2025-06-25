@@ -1,5 +1,6 @@
 ﻿using AutoMapper;
 using Mango.Services.ProductAPI.Models.Dto;
+using Mango.Services.ProductAPI.RequestHelpers;
 using Mango.Services.ProductAPI.Service.IService;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -22,11 +23,11 @@ namespace Mango.Services.ProductAPI.Controllers
         }
 
         [HttpGet]
-        public async Task<ResponseDto> Get()
+        public async Task<ResponseDto> Get([FromQuery] ProductParams productParams)
         {
             try
             {
-                var result = await _productService.GetProducts();
+                var result = await _productService.GetProducts(productParams);
                 if (result == null || !result.Any())
                 {
                     _response.IsSuccess = false;
@@ -125,6 +126,29 @@ namespace Mango.Services.ProductAPI.Controllers
                     _response.Message = "Error while deleting product.";
                     return _response;
                 }
+                return _response;
+            }
+            catch (Exception ex)
+            {
+                _response.IsSuccess = false;
+                _response.Message = ex.Message;
+            }
+            return _response;
+        }
+
+        [HttpGet("filters")]
+        public async Task<ResponseDto> GetFilters()
+        {
+            try
+            {
+                var result = await _productService.GetFilters();
+                if (result.Types.Count <= 0 || result.Brands.Count <= 0)
+                {
+                    _response.IsSuccess = false;
+                    _response.Message = "Error while get filters.";
+                    return _response;
+                }
+                _response.Result = result;
                 return _response;
             }
             catch (Exception ex)
