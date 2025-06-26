@@ -1,14 +1,8 @@
-﻿using System.ComponentModel.DataAnnotations;
-
-namespace Mango.Services.ProductAPI.Models
+﻿namespace Mango.Services.ProductAPI.Models.Dto
 {
-    public class Product : BaseEntity
+    public class CreateProductDto
     {
-        [Key]
-        public int ProductId { get; set; }
-        [Required]
         public string Name { get; set; }
-        [Range(1, 1000)]
         public double Price { get; set; }
         public string Description { get; set; }
         public string Type { get; set; }
@@ -16,5 +10,6 @@ namespace Mango.Services.ProductAPI.Models
         public int QuantityInStock { get; set; }
         public string? ImageUrl { get; set; }
         public string? ImageLocalPath { get; set; }
+        public IFormFile? File { get; set; }
     }
 }

@@ -7,8 +7,9 @@ namespace Mango.Services.ProductAPI.Service.IService
     {
         Task<IEnumerable<ProductDto>> GetProducts(ProductParams productParams);
         Task<ProductDto> GetProductById(int id);
-        Task<ProductDto> CreateUpdateProduct(ProductDto productDto);
-        Task<int> DeleteProduct(int id);
+        Task<CreateProductDto> Create(CreateProductDto productDto);
+        Task<UpdateProductDto> Update(UpdateProductDto productDto);
+        Task<int> Delete(int id);
         Task<Filter> GetFilters();
     }
 }

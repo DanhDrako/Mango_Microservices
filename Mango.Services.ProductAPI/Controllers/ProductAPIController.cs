@@ -65,11 +65,11 @@ namespace Mango.Services.ProductAPI.Controllers
 
         [HttpPost]
         [Authorize(Roles = "ADMIN")]
-        public async Task<ResponseDto> Post(ProductDto productDto)
+        public async Task<ResponseDto> Post(CreateProductDto productDto)
         {
             try
             {
-                var result = await _productService.CreateUpdateProduct(productDto);
+                var result = await _productService.Create(productDto);
                 if (result == null)
                 {
                     _response.IsSuccess = false;
@@ -89,11 +89,11 @@ namespace Mango.Services.ProductAPI.Controllers
 
         [HttpPut]
         [Authorize(Roles = "ADMIN")]
-        public async Task<ResponseDto> Put(ProductDto productDto)
+        public async Task<ResponseDto> Put(UpdateProductDto productDto)
         {
             try
             {
-                var result = await _productService.CreateUpdateProduct(productDto);
+                var result = await _productService.Update(productDto);
                 if (result == null)
                 {
                     _response.IsSuccess = false;
@@ -116,7 +116,7 @@ namespace Mango.Services.ProductAPI.Controllers
         {
             try
             {
-                var result = await _productService.DeleteProduct(id);
+                var result = await _productService.Delete(id);
                 if (result == 0)
                 {
                     _response.IsSuccess = false;

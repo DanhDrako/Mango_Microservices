@@ -10,6 +10,8 @@ namespace Mango.Services.ProductAPI.Extensions
             {
                 "price" => query.OrderBy(x => x.Price),
                 "priceDesc" => query.OrderByDescending(x => x.Price),
+                "updateDate" => query.OrderBy(x => x.UpdatedAt),
+                "updateDateDesc" => query.OrderByDescending(x => x.UpdatedAt),
                 _ => query.OrderBy(x => x.Name)
             };
 

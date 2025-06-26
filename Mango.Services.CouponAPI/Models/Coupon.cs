@@ -2,7 +2,7 @@
 
 namespace Mango.Services.CouponAPI.Models
 {
-    public class Coupon
+    public class Coupon : BaseEntity
     {
         [Key]
         public int CouponId { get; set; }
