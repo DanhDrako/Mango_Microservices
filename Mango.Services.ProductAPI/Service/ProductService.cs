@@ -93,11 +93,7 @@ namespace Mango.Services.ProductAPI.Service
                 throw new ArgumentNullException(nameof(productDto), "Product cannot be null");
             }
 
-            var existingProduct = await _db.Products.FindAsync(productDto.ProductId);
-            if (existingProduct == null)
-            {
-                throw new Exception("Product not found");
-            }
+            var existingProduct = await _db.Products.FindAsync(productDto.ProductId) ?? throw new Exception("Product not found");
 
             // 1. Mapping
             Product product = _mapper.Map(productDto, existingProduct); // This updates only mapped fields
@@ -135,8 +131,6 @@ namespace Mango.Services.ProductAPI.Service
             }
 
             // 3. Update to database
-            // Update UpdatedAt
-            product.UpdateDate();
             _db.Products.Update(product);
             _db.SaveChanges();
 

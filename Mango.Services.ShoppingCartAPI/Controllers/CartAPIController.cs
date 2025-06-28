@@ -22,7 +22,7 @@ namespace Mango.Services.ShoppingCartAPI.Controllers
         {
             try
             {
-                var cart = await _cartService.GetCartByUserId(userId);
+                var cart = await _cartService.GetCart(userId);
                 if (cart == null)
                 {
                     _response.IsSuccess = false;
@@ -45,7 +45,7 @@ namespace Mango.Services.ShoppingCartAPI.Controllers
             try
             {
                 var result = await _cartService.ApplyCoupon(cartDto);
-                if (result == null)
+                if (!result)
                 {
                     _response.IsSuccess = false;
                     _response.Message = "Failed to apply coupon.";
@@ -105,7 +105,7 @@ namespace Mango.Services.ShoppingCartAPI.Controllers
             return _response;
         }
 
-        [HttpPost("RemoveCart")]
+        [HttpDelete("RemoveCart")]
         public async Task<ResponseDto> RemoveCart(int cartDetailsId)
         {
             try
