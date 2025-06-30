@@ -1,5 +1,7 @@
 ﻿using Mango.Services.ShoppingCartAPI.Models.Dto;
+using Mango.Services.ShoppingCartAPI.Models.Dto.Cart;
 using Mango.Services.ShoppingCartAPI.Service.IService;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Mango.Services.ShoppingCartAPI.Controllers
@@ -17,18 +19,12 @@ namespace Mango.Services.ShoppingCartAPI.Controllers
             _cartService = cartService;
         }
 
-        [HttpGet("GetCart/{userId}")]
+        [HttpGet("{userId}")]
         public async Task<ResponseDto> GetCart(string userId)
         {
             try
             {
                 var cart = await _cartService.GetCart(userId);
-                if (cart == null)
-                {
-                    _response.IsSuccess = false;
-                    _response.Message = "Cart not found.";
-                    return _response;
-                }
                 _response.Result = cart;
             }
             catch (Exception ex)
@@ -40,7 +36,7 @@ namespace Mango.Services.ShoppingCartAPI.Controllers
         }
 
         [HttpPost("ApplyCoupon")]
-        public async Task<ResponseDto> ApplyCoupon(CartDto cartDto)
+        public async Task<ResponseDto> ApplyCoupon(CartHeaderDto cartDto)
         {
             try
             {
@@ -62,7 +58,7 @@ namespace Mango.Services.ShoppingCartAPI.Controllers
         }
 
         [HttpPost("EmailCartRequest")]
-        public async Task<object> EmailCartRequest(CartDto cartDto)
+        public async Task<object> EmailCartRequest(CartHeaderDto cartDto)
         {
             try
             {
@@ -83,12 +79,13 @@ namespace Mango.Services.ShoppingCartAPI.Controllers
             return _response;
         }
 
+        [Authorize]
         [HttpPost("CartUpsert")]
-        public async Task<ResponseDto> CartUpsert(CartDto cartDto)
+        public async Task<ResponseDto> CartUpsert(InputCartDto inputCartDto)
         {
             try
             {
-                var result = await _cartService.CartUpsert(cartDto);
+                var result = await _cartService.CartUpsert(inputCartDto);
                 if (result == null)
                 {
                     _response.IsSuccess = false;
@@ -105,12 +102,13 @@ namespace Mango.Services.ShoppingCartAPI.Controllers
             return _response;
         }
 
+        [Authorize]
         [HttpDelete("RemoveCart")]
-        public async Task<ResponseDto> RemoveCart(int cartDetailsId)
+        public async Task<ResponseDto> RemoveCart(InputCartDto inputCartDto)
         {
             try
             {
-                var result = await _cartService.RemoveCart(cartDetailsId);
+                var result = await _cartService.RemoveCart(inputCartDto);
                 if (!result)
                 {
                     _response.IsSuccess = false;

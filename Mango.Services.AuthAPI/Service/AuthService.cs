@@ -114,20 +114,41 @@ namespace Mango.Services.AuthAPI.Service
 
         public async Task<UserInfoDto> UserInfo(string token)
         {
-            if (token == null || !token.StartsWith("Bearer "))
+            if (string.IsNullOrWhiteSpace(token) || !token.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
             {
                 return null;
             }
-            var jwtEncoded = token.Replace("Bearer ", "");
+
+            var jwtEncoded = token["Bearer ".Length..].Trim();
+            if (string.IsNullOrWhiteSpace(jwtEncoded))
+            {
+                return null;
+            }
+
             var handler = new JwtSecurityTokenHandler();
-            var jwtDecoded = handler.ReadToken(jwtEncoded) as JwtSecurityToken;
-            var claims = jwtDecoded?.Claims.Where(j => j.Type == "email" || j.Type == "role");
-            if (claims == null || !claims.Any())
+            if (!handler.CanReadToken(jwtEncoded))
             {
                 return null;
             }
+
+            var jwtDecoded = handler.ReadToken(jwtEncoded) as JwtSecurityToken;
+            if (jwtDecoded == null)
+            {
+                return null;
+            }
+
+            var claims = jwtDecoded.Claims
+            .Where(c => c.Type == "email" || c.Type == "role" || c.Type == "sub")
+            .ToList();
+
+            if (!claims.Any())
+            {
+                return null;
+            }
+
             var userInfo = new UserInfoDto
             {
+                ID = claims.FirstOrDefault(c => c.Type == "sub")?.Value,
                 Email = claims.FirstOrDefault(c => c.Type == "email")?.Value,
                 Role = claims.FirstOrDefault(c => c.Type == "role")?.Value
             };

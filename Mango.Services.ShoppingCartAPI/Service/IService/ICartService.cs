@@ -1,15 +1,13 @@
-﻿
-
-using Mango.Services.ShoppingCartAPI.Models.Dto;
+﻿using Mango.Services.ShoppingCartAPI.Models.Dto.Cart;
 
 namespace Mango.Services.ShoppingCartAPI.Service.IService
 {
     public interface ICartService
     {
-        Task<CartDto> GetCart(string userId);
-        Task<bool> ApplyCoupon(CartDto cartDto);
-        Task<object> EmailCartRequest(CartDto cartDto);
-        Task<CartDto> CartUpsert(CartDto cartDto);
-        Task<bool> RemoveCart(int cartDetailsId);
+        Task<CartHeaderDto?> GetCart(string userId);
+        Task<bool> ApplyCoupon(CartHeaderDto cartDto);
+        Task<object> EmailCartRequest(CartHeaderDto cartDto);
+        Task<CartHeaderDto> CartUpsert(InputCartDto inputCartDto);
+        Task<bool> RemoveCart(InputCartDto inputCartDto);
     }
 }
