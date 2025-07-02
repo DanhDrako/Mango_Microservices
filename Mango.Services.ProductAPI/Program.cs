@@ -73,6 +73,6 @@ app.UseAuthorization();
 app.UseStaticFiles();
 app.MapControllers();
 
-DbInitializer.InitDb(app);
+await DbInitializer.InitDb(app);
 
 app.Run();

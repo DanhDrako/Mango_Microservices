@@ -156,11 +156,11 @@ namespace Mango.Services.ProductAPI.Service
 
         public async Task<Filter> GetFilters()
         {
-            var types = await _db.Products.Select(p => p.Type).Distinct().ToListAsync();
-            var brands = await _db.Products.Select(p => p.Brand).Distinct().ToListAsync();
+            var categories = await _db.Categories.ToListAsync();
+            var brands = await _db.Brands.ToListAsync();
             var filter = new Filter
             {
-                Types = types,
+                Categories = categories,
                 Brands = brands
             };
             return filter;
@@ -178,7 +178,7 @@ namespace Mango.Services.ProductAPI.Service
             var query = _db.Products
             .Sort(productParams.OrderBy)
             .Search(productParams.SearchTerm)
-            .Filter(productParams.Brands, productParams.Types)
+            .Filter(productParams.Brands, productParams.Categories)
             .AsQueryable();
 
             // Fetch paginated list of products

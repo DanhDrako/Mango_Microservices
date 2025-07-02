@@ -139,12 +139,6 @@ namespace Mango.Services.ProductAPI.Controllers
             try
             {
                 var result = await _productService.GetFilters();
-                if (result.Types.Count <= 0 || result.Brands.Count <= 0)
-                {
-                    _response.IsSuccess = false;
-                    _response.Message = "Error while get filters.";
-                    return _response;
-                }
                 _response.Result = result;
                 return _response;
             }

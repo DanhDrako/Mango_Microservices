@@ -2,6 +2,7 @@
 using Mango.Services.ProductAPI.Extensions;
 using Mango.Services.ProductAPI.Models;
 using Mango.Services.ProductAPI.Models.Dto;
+using Mango.Services.ProductAPI.Models.Dto.Filters;
 
 namespace Mango.Services.ProductAPI
 {
@@ -18,6 +19,8 @@ namespace Mango.Services.ProductAPI
                 .ReverseMap();
                 config.CreateMap<CreateProductDto, Product>().ReverseMap();
                 config.CreateMap<ProductDto, Product>().ReverseMap();
+                config.CreateMap<CategoryDto, Category>().ReverseMap();
+                config.CreateMap<BrandDto, Brand>().ReverseMap();
             });
             return mappingConfig;
         }

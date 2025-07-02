@@ -2,7 +2,7 @@
 {
     public class Filter
     {
-        public List<string> Types { get; set; }
-        public List<string> Brands { get; set; }
+        public IEnumerable<Category> Categories { get; set; }
+        public IEnumerable<Brand> Brands { get; set; }
     }
 }

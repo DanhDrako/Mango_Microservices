@@ -27,7 +27,7 @@ namespace Mango.Services.ProductAPI.Extensions
             return query.Where(x => x.Name.ToLower().Contains(lowerCaseSearchTerm));
         }
 
-        public static IQueryable<Product> Filter(this IQueryable<Product> query, string? brands, string? types)
+        public static IQueryable<Product> Filter(this IQueryable<Product> query, string? brands, string? cates)
         {
             var brandList = new List<string>();
             var typeList = new List<string>();
@@ -37,13 +37,13 @@ namespace Mango.Services.ProductAPI.Extensions
                 brandList.AddRange([.. brands.ToLower().Split(",")]);
             }
 
-            if (!string.IsNullOrEmpty(types))
+            if (!string.IsNullOrEmpty(cates))
             {
-                typeList.AddRange([.. types.ToLower().Split(",")]);
+                typeList.AddRange([.. cates.ToLower().Split(",")]);
             }
 
-            query = query.Where(x => brandList.Count == 0 || brandList.Contains(x.Brand.ToLower()));
-            query = query.Where(x => typeList.Count == 0 || typeList.Contains(x.Type.ToLower()));
+            query = query.Where(x => brandList.Count == 0 || brandList.Contains(x.Brand.Name.ToLower()));
+            query = query.Where(x => typeList.Count == 0 || typeList.Contains(x.Category.Name.ToLower()));
 
             return query;
         }

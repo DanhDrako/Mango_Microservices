@@ -12,5 +12,8 @@
         public string? ImageUrl { get; set; }
         public string? ImageLocalPath { get; set; }
         public IFormFile? File { get; set; }
+        public int? CategoryId { get; set; }
+        public int? BrandId { get; set; }
+
     }
 }
