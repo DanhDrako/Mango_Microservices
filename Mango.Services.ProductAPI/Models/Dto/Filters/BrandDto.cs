@@ -2,7 +2,8 @@
 {
     public class BrandDto
     {
-        public int BrandId { get; set; }
+        public long BrandId { get; set; }
         public required string Name { get; set; }
+        public ICollection<ProductDto> Products { get; set; } = [];
     }
 }

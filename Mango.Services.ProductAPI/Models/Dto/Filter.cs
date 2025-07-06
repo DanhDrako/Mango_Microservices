@@ -1,8 +1,10 @@
-﻿namespace Mango.Services.ProductAPI.Models.Dto
+﻿using Mango.Services.ProductAPI.Models.Dto.Filters;
+
+namespace Mango.Services.ProductAPI.Models.Dto
 {
     public class Filter
     {
-        public IEnumerable<Category> Categories { get; set; }
-        public IEnumerable<Brand> Brands { get; set; }
+        public IEnumerable<CategoryDto> Categories { get; set; }
+        public IEnumerable<BrandDto> Brands { get; set; }
     }
 }

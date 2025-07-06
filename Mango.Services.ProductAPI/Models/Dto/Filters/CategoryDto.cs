@@ -2,7 +2,9 @@
 {
     public class CategoryDto
     {
-        public int CategoryId { get; set; }
+        public long CategoryId { get; set; }
         public required string Name { get; set; }
+        public ICollection<ProductDto> Products { get; set; } = [];
+
     }
 }

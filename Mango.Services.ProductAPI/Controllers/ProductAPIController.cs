@@ -1,4 +1,5 @@
 ﻿using Mango.Services.ProductAPI.Models.Dto;
+using Mango.Services.ProductAPI.Models.Dto.Filters;
 using Mango.Services.ProductAPI.RequestHelpers;
 using Mango.Services.ProductAPI.Service.IService;
 using Microsoft.AspNetCore.Authorization;
@@ -149,5 +150,23 @@ namespace Mango.Services.ProductAPI.Controllers
             }
             return _response;
         }
+
+        [HttpPost("edit-filters")]
+        public async Task<ResponseDto> EditFilters(FilterInput filter)
+        {
+            try
+            {
+                var result = await _productService.EditFilters(filter);
+                _response.Result = result;
+                return _response;
+            }
+            catch (Exception ex)
+            {
+                _response.IsSuccess = false;
+                _response.Message = ex.Message;
+            }
+            return _response;
+        }
+
     }
 }

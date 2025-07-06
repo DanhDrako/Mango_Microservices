@@ -3,9 +3,11 @@ using Mango.Services.ProductAPI.Data;
 using Mango.Services.ProductAPI.Extensions;
 using Mango.Services.ProductAPI.Models;
 using Mango.Services.ProductAPI.Models.Dto;
+using Mango.Services.ProductAPI.Models.Dto.Filters;
 using Mango.Services.ProductAPI.RequestHelpers;
 using Mango.Services.ProductAPI.Service.IService;
 using Microsoft.EntityFrameworkCore;
+using Newtonsoft.Json;
 
 namespace Mango.Services.ProductAPI.Service
 {
@@ -156,14 +158,17 @@ namespace Mango.Services.ProductAPI.Service
 
         public async Task<Filter> GetFilters()
         {
-            var categories = await _db.Categories.ToListAsync();
-            var brands = await _db.Brands.ToListAsync();
-            var filter = new Filter
             {
-                Categories = categories,
-                Brands = brands
-            };
-            return filter;
+                IEnumerable<Category> categories = await _db.Categories
+                    .ToListAsync();
+                IEnumerable<Brand> brands = await _db.Brands
+                    .ToListAsync();
+                return new Filter()
+                {
+                    Categories = _mapper.Map<IEnumerable<CategoryDto>>(categories),
+                    Brands = _mapper.Map<IEnumerable<BrandDto>>(brands)
+                };
+            }
         }
 
         public async Task<ProductDto> GetProductById(int id)
@@ -192,6 +197,149 @@ namespace Mango.Services.ProductAPI.Service
             httpContext.Response.AddPaginationHeaders(products.Metadata);
 
             return productDtos;
+        }
+
+        public async Task<Filter> GetFiltersIncludeProduct()
+        {
+            {
+                IEnumerable<Category> categories = await _db.Categories
+                    .Include(x => x.Products)
+                    .AsNoTracking()
+                    .ToListAsync();
+                IEnumerable<Brand> brands = await _db.Brands
+                    .Include(x => x.Products)
+                    .AsNoTracking()
+                    .ToListAsync();
+                return new Filter()
+                {
+                    Categories = _mapper.Map<IEnumerable<CategoryDto>>(categories), // Fix: Map to IEnumerable<CategoryDto>
+                    Brands = _mapper.Map<IEnumerable<BrandDto>>(brands) // Ensure brands are mapped correctly
+                };
+            }
+        }
+
+        private async Task RemoveInvalidFilters(FilterInput filterInput)
+        {
+            var cateInput = JsonConvert.DeserializeObject<IEnumerable<CategoryDto>>(filterInput.Categories);
+            var brandInput = JsonConvert.DeserializeObject<IEnumerable<BrandDto>>(filterInput.Brands);
+
+            if (cateInput == null || brandInput == null) return;
+
+            var filter = new Filter()
+            {
+                Categories = cateInput,
+                Brands = brandInput
+            };
+
+            var allFilter = await GetFiltersIncludeProduct();
+
+            var listCateRemove = allFilter.Categories.AsEnumerable()
+                .Where(c => !filter.Categories.Any(fc => fc.CategoryId == c.CategoryId)); // Get categories that do not exist in the filter
+
+            var listBrandRemove = allFilter.Brands.AsEnumerable()
+                .Where(b => !filter.Brands.Any(fb => fb.BrandId == b.BrandId)); // Get brands that do not exist in the filter
+
+            if (listCateRemove == null || listBrandRemove == null) return;
+
+            foreach (var category in listCateRemove)
+            {
+                if (category.Products.Count != 0)
+                {
+                    throw new InvalidOperationException($"Category {category.Name} cannot be removed because it is associated with products.");
+                }
+                _db.Categories.Remove(_mapper.Map<Category>(category)); // Remove categories that do not exist in the filter
+            }
+
+            foreach (var brand in listBrandRemove)
+            {
+                if (brand.Products.Count != 0)
+                {
+                    throw new InvalidOperationException($"Brand {brand.Name} cannot be removed because it is associated with products.");
+                }
+                _db.Brands.Remove(_mapper.Map<Brand>(brand)); // Remove brands that do not exist in the filter
+            }
+
+            // Save changes to the database
+            await _db.SaveChangesAsync();
+        }
+
+        private async Task AddOrUpdateFilters(FilterInput filterInput)
+        {
+
+            var cateInput = JsonConvert.DeserializeObject<IEnumerable<CategoryDto>>(filterInput.Categories);
+            var brandInput = JsonConvert.DeserializeObject<IEnumerable<BrandDto>>(filterInput.Brands);
+
+            if (cateInput == null || brandInput == null) return;
+
+            var filter = new Filter()
+            {
+                Categories = cateInput,
+                Brands = brandInput
+            };
+
+            // Add or update categories
+            foreach (var category in filter.Categories)
+            {
+                var existingCategory = _db.Categories.FirstOrDefault(c => c.CategoryId == category.CategoryId);
+
+                // Not existing => create
+                if (existingCategory == null)
+                {
+                    _db.Categories.Add(new Category { Name = category.Name });
+                }
+                else
+                {
+                    // Update existing category if needed
+                    if (existingCategory.Name != category.Name)
+                    {
+                        existingCategory.Name = category.Name;
+                        _db.Categories.Update(existingCategory);
+                    }
+                }
+            }
+            // Add or update brands
+            foreach (var brand in filter.Brands)
+            {
+                var existingBrand = _db.Brands.FirstOrDefault(b => b.BrandId == brand.BrandId);
+
+                // Not existing => create
+                if (existingBrand == null)
+                {
+                    _db.Brands.Add(new Brand { Name = brand.Name });
+                }
+                else
+                {
+                    // Update existing brand if needed
+                    if (existingBrand.Name != brand.Name)
+                    {
+                        existingBrand.Name = brand.Name;
+                        _db.Brands.Update(existingBrand);
+                    }
+                }
+            }
+
+            // Save changes to the database
+            await _db.SaveChangesAsync();
+        }
+        /// <summary>
+        /// Handle edit filter
+        /// </summary>
+        /// <param name="filter"></param>
+        /// <returns>filterDto</returns>
+        public async Task<bool> EditFilters(FilterInput filter)
+        {
+            if (filter == null)
+            {
+                throw new ArgumentNullException(nameof(filter), "Filter cannot be null");
+            }
+
+            // Remove invalid filters
+            await RemoveInvalidFilters(filter);
+
+            // Add or update filters
+            await AddOrUpdateFilters(filter);
+
+            return true;
         }
     }
 }

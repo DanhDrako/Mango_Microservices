@@ -12,40 +12,42 @@ namespace Mango.Services.ProductAPI.Data
             var context = scope.ServiceProvider.GetRequiredService<AppDbContext>()
                 ?? throw new InvalidOperationException("Failed to retrieve store context");
 
-            await SeedCateData(context);
-            await SeedBrandData(context);
-            await SeedProductData(context);
+            // migration for category, brand, product
+            if (context.Database.GetPendingMigrations().Any())
+            {
+                context.Database.Migrate();
+            }
+
+            await SeedCatesData(context);
+            await SeedBrandsData(context);
+            await SeedProductsData(context);
+            await context.SaveChangesAsync();
         }
 
-        private static async Task SeedCateData(AppDbContext context)
+        private static async Task SeedCatesData(AppDbContext context)
         {
-            context.Database.Migrate();
             if (context.Categories.Any()) return;
             var categories = new List<Category>
             {
                 new() { Name = "Food" },
                 new() { Name = "Water" }
             };
-            context.Categories.AddRange(categories);
-            await context.SaveChangesAsync();
+            await context.Categories.AddRangeAsync(categories);
         }
 
-        private static async Task SeedBrandData(AppDbContext context)
+        private static async Task SeedBrandsData(AppDbContext context)
         {
-            context.Database.Migrate();
             if (context.Brands.Any()) return;
             var brands = new List<Brand>
             {
                 new() { Name = "KFC" },
                 new() { Name = "Jollibee" }
             };
-            context.Brands.AddRange(brands);
-            await context.SaveChangesAsync();
+            await context.Brands.AddRangeAsync(brands);
         }
 
-        private static async Task SeedProductData(AppDbContext context)
+        private static async Task SeedProductsData(AppDbContext context)
         {
-            context.Database.Migrate();
             if (context.Products.Any()) return;
             var products = new List<Product>
             {
@@ -83,8 +85,7 @@ namespace Mango.Services.ProductAPI.Data
                 }
             };
 
-            context.Products.AddRange(products);
-            await context.SaveChangesAsync();
+            await context.Products.AddRangeAsync(products);
         }
     }
 }
