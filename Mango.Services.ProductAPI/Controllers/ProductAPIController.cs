@@ -1,4 +1,5 @@
-﻿using log4net;
+﻿using AutoMapper;
+using log4net;
 using Mango.Services.ProductAPI.Models.Dto;
 using Mango.Services.ProductAPI.Models.Dto.Filters;
 using Mango.Services.ProductAPI.RequestHelpers;
@@ -12,12 +13,14 @@ namespace Mango.Services.ProductAPI.Controllers
     [ApiController]
     public class ProductAPIController : ControllerBase
     {
+        private readonly IMapper _mapper;
         private readonly ResponseDto _response;
         private readonly IProductService _productService;
         private static readonly ILog _logger = LogManager.GetLogger(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);
 
-        public ProductAPIController(IProductService productService)
+        public ProductAPIController(IMapper mapper, IProductService productService)
         {
+            _mapper = mapper;
             _response = new();
             _productService = productService;
         }
@@ -81,7 +84,8 @@ namespace Mango.Services.ProductAPI.Controllers
                     _response.Message = "Error while creating product.";
                     return _response;
                 }
-                _response.Result = result;
+                _logger.Info($"Created a product with ID {result.ProductId}");
+                _response.Result = _mapper.Map<CreateProductDto>(result);
             }
             catch (Exception ex)
             {
@@ -106,7 +110,8 @@ namespace Mango.Services.ProductAPI.Controllers
                     _response.Message = "Error while updating product.";
                     return _response;
                 }
-                _response.Result = result;
+                _logger.Info($"Updated a product with ID {result.ProductId}");
+                _response.Result = _mapper.Map<UpdateProductDto>(result);
             }
             catch (Exception ex)
             {
@@ -130,6 +135,7 @@ namespace Mango.Services.ProductAPI.Controllers
                     _response.Message = "Error while deleting product.";
                     return _response;
                 }
+                _logger.Info($"Deleted a product with ID {id}");
                 return _response;
             }
             catch (Exception ex)
@@ -165,6 +171,13 @@ namespace Mango.Services.ProductAPI.Controllers
             try
             {
                 var result = await _productService.EditFilters(filter);
+                if (!result)
+                {
+                    _response.IsSuccess = false;
+                    _response.Message = "Error while editing filter.";
+                    return _response;
+                }
+                _logger.Info($"Edited a filters successfully.");
                 _response.Result = result;
                 return _response;
             }

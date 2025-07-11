@@ -89,6 +89,7 @@ namespace Mango.Services.CouponAPI.Controllers
                 _db.Coupons.Add(obj);
                 _db.SaveChanges();
 
+                _logger.Info($"Created a coupon with ID {obj.CouponId}");
                 _response.Result = _mapper.Map<CouponDto>(obj);
             }
             catch (Exception ex)
@@ -107,12 +108,13 @@ namespace Mango.Services.CouponAPI.Controllers
         {
             try
             {
-                var existingCoupon = _db.Coupons.Find(couponDto.CouponId) ?? throw new KeyNotFoundException($"Coupon with CouponId {couponDto.CouponId} not found.");
+                var existingCoupon = _db.Coupons.Find(couponDto.CouponId) ?? throw new KeyNotFoundException($"Coupon with CouponId: {couponDto.CouponId} not found.");
 
                 Coupon obj = _mapper.Map(couponDto, existingCoupon); // This updates only mapped fields
                 _db.Coupons.Update(obj);
                 _db.SaveChanges();
 
+                _logger.Info($"Updated a coupon with ID {existingCoupon.CouponId}");
                 _response.Result = _mapper.Map<CouponDto>(obj);
             }
             catch (Exception ex)
@@ -130,9 +132,11 @@ namespace Mango.Services.CouponAPI.Controllers
         {
             try
             {
-                Coupon obj = _db.Coupons.First(x => x.CouponId == id);
+                Coupon obj = _db.Coupons.First(x => x.CouponId == id) ?? throw new KeyNotFoundException($"Coupon with CouponId: {id} not found.");
                 _db.Coupons.Remove(obj);
                 _db.SaveChanges();
+
+                _logger.Info($"Deleted a coupon with ID {obj.CouponId}");
             }
             catch (Exception ex)
             {

@@ -31,6 +31,7 @@ namespace Mango.Services.AuthAPI.Controllers
                     _response.Message = errorMessage;
                     return BadRequest(_response);
                 }
+                _logger.Info($"Registration successfully with Email: {model.Email}");
                 return Ok(_response);
             }
             catch (Exception ex)
@@ -59,7 +60,7 @@ namespace Mango.Services.AuthAPI.Controllers
             }
             catch (Exception ex)
             {
-                _logger.Error($"An error occurred during registration for user {model.Email}", ex);
+                _logger.Error($"An error occurred during login for user {model.Email}", ex);
                 _response.IsSuccess = false;
                 _response.Message = "An error occurred while processing your request.";
                 return StatusCode(500, _response);
@@ -78,6 +79,7 @@ namespace Mango.Services.AuthAPI.Controllers
                     _response.Message = "Error encountered";
                     return BadRequest(_response);
                 }
+                _logger.Info($"AssignRole successfully with Email: {model.Email} and Role: {model.Role}");
                 return Ok(_response);
             }
             catch (Exception ex)

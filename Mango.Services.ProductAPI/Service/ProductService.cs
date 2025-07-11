@@ -31,7 +31,7 @@ namespace Mango.Services.ProductAPI.Service
         /// <returns>ProductDto</returns>
         /// <exception cref="ArgumentNullException"></exception>
         /// <exception cref="InvalidOperationException"></exception>
-        public async Task<CreateProductDto> Create(CreateProductDto productDto)
+        public async Task<Product> Create(CreateProductDto productDto)
         {
             if (productDto == null)
             {
@@ -77,8 +77,7 @@ namespace Mango.Services.ProductAPI.Service
             _db.Products.Update(product);
             _db.SaveChanges();
 
-            var res = _mapper.Map<CreateProductDto>(product);
-            return res;
+            return product;
         }
 
         /// <summary>
@@ -88,7 +87,7 @@ namespace Mango.Services.ProductAPI.Service
         /// <returns>ProductDto</returns>
         /// <exception cref="ArgumentNullException"></exception>
         /// <exception cref="InvalidOperationException"></exception>
-        public async Task<UpdateProductDto> Update(UpdateProductDto productDto)
+        public async Task<Product> Update(UpdateProductDto productDto)
         {
             if (productDto == null)
             {
@@ -135,9 +134,7 @@ namespace Mango.Services.ProductAPI.Service
             // 3. Update to database
             _db.Products.Update(product);
             _db.SaveChanges();
-
-            var res = _mapper.Map<UpdateProductDto>(product);
-            return res;
+            return product;
         }
 
         public async Task<int> Delete(int id)

@@ -50,6 +50,7 @@ namespace Mango.Services.ShoppingCartAPI.Controllers
                     _response.Message = "Failed to apply coupon.";
                     return _response;
                 }
+                _logger.Info($"ApplyCoupon successfully for userId: {cartDto.UserId} and cartHearderId: {cartDto.CartHeaderId}");
                 _response.Result = result;
             }
             catch (Exception ex)
@@ -97,13 +98,14 @@ namespace Mango.Services.ShoppingCartAPI.Controllers
                     _response.Message = "Failed to upsert cart.";
                     return _response;
                 }
+                _logger.Info($"CartUpsert successfully for userId: {inputCartDto.UserId} and productId: {inputCartDto.ProductId}");
                 _response.Result = result;
             }
             catch (Exception ex)
             {
                 _logger.Error(
-                    $"Error occurred while upserting cart for user {inputCartDto.UserId}" +
-                    $"and product {inputCartDto.ProductId}:", ex);
+                    $"Error occurred while upserting cart for userId: {inputCartDto.UserId}" +
+                    $"and productId: {inputCartDto.ProductId}:", ex);
                 _response.IsSuccess = false;
                 _response.Message = ex.Message;
             }
@@ -123,13 +125,14 @@ namespace Mango.Services.ShoppingCartAPI.Controllers
                     _response.Message = "Failed to remove cart item.";
                     return _response;
                 }
+                _logger.Info($"RemoveCart successfully for userId: {inputCartDto.UserId} and productId: {inputCartDto.ProductId}");
                 _response.Result = "Cart item removed successfully.";
             }
             catch (Exception ex)
             {
                 _logger.Error(
-                    $"Error occurred while removing cart item for user {inputCartDto.UserId} " +
-                    $"and product {inputCartDto.ProductId}:", ex);
+                    $"Error occurred while removing cart item for userId: {inputCartDto.UserId} " +
+                    $"and productId: {inputCartDto.ProductId}:", ex);
                 _response.IsSuccess = false;
                 _response.Message = ex.Message;
             }
