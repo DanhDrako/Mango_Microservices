@@ -1,4 +1,6 @@
 using AutoMapper;
+using log4net;
+using log4net.Config;
 using Mango.Services.ProductAPI;
 using Mango.Services.ProductAPI.Data;
 using Mango.Services.ProductAPI.Extensions;
@@ -7,8 +9,19 @@ using Mango.Services.ProductAPI.Service.IService;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
+using System.Reflection;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Configure log4net
+var logRepository = LogManager.GetRepository(Assembly.GetEntryAssembly());
+XmlConfigurator.Configure(logRepository, new FileInfo("log4net.config"));
+
+//var logDir = Path.Combine(AppContext.BaseDirectory, "logger");
+//if (!Directory.Exists(logDir))
+//{
+//    Directory.CreateDirectory(logDir);
+//}
 
 builder.Services.AddDbContext<AppDbContext>(option =>
 {

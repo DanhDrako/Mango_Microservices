@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using log4net;
 using Mango.Services.CouponAPI.Data;
 using Mango.Services.CouponAPI.Models;
 using Mango.Services.CouponAPI.Models.Dto;
@@ -15,6 +16,7 @@ namespace Mango.Services.CouponAPI.Controllers
         private readonly AppDbContext _db;
         private readonly ResponseDto _response;
         private readonly IMapper _mapper;
+        private static readonly ILog _logger = LogManager.GetLogger(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);
 
         public CouponAPIController(AppDbContext db, IMapper mapper)
         {
@@ -33,6 +35,7 @@ namespace Mango.Services.CouponAPI.Controllers
             }
             catch (Exception ex)
             {
+                _logger.Error("Error occurred while fetching coupons.", ex);
                 _response.IsSuccess = false;
                 _response.Message = ex.Message;
             }
@@ -49,6 +52,7 @@ namespace Mango.Services.CouponAPI.Controllers
             }
             catch (Exception ex)
             {
+                _logger.Error($"Error occurred while fetching coupon with ID: {id}", ex);
                 _response.IsSuccess = false;
                 _response.Message = ex.Message;
             }
@@ -61,11 +65,14 @@ namespace Mango.Services.CouponAPI.Controllers
         {
             try
             {
-                Coupon obj = _db.Coupons.First(x => x.CouponCode.ToLower() == code.ToLower());
+                Coupon obj = _db.Coupons.First(
+                    x => x.CouponCode.Equals(code, StringComparison.CurrentCultureIgnoreCase));
+
                 _response.Result = _mapper.Map<CouponDto>(obj);
             }
             catch (Exception ex)
             {
+                _logger.Error($"Error occurred while fetching coupon with code: {code}", ex);
                 _response.IsSuccess = false;
                 _response.Message = ex.Message;
             }
@@ -78,7 +85,6 @@ namespace Mango.Services.CouponAPI.Controllers
         {
             try
             {
-
                 Coupon obj = _mapper.Map<Coupon>(couponDto);
                 _db.Coupons.Add(obj);
                 _db.SaveChanges();
@@ -87,6 +93,7 @@ namespace Mango.Services.CouponAPI.Controllers
             }
             catch (Exception ex)
             {
+                _logger.Error("Error occurred while creating a new coupon.", ex);
                 _response.IsSuccess = false;
                 _response.Message = ex.Message;
             }
@@ -100,7 +107,9 @@ namespace Mango.Services.CouponAPI.Controllers
         {
             try
             {
-                Coupon obj = _mapper.Map<Coupon>(couponDto);
+                var existingCoupon = _db.Coupons.Find(couponDto.CouponId) ?? throw new KeyNotFoundException($"Coupon with CouponId {couponDto.CouponId} not found.");
+
+                Coupon obj = _mapper.Map(couponDto, existingCoupon); // This updates only mapped fields
                 _db.Coupons.Update(obj);
                 _db.SaveChanges();
 
@@ -108,6 +117,7 @@ namespace Mango.Services.CouponAPI.Controllers
             }
             catch (Exception ex)
             {
+                _logger.Error($"Error occurred while updating coupon with ID {couponDto.CouponId}", ex);
                 _response.IsSuccess = false;
                 _response.Message = ex.Message;
             }
@@ -126,6 +136,7 @@ namespace Mango.Services.CouponAPI.Controllers
             }
             catch (Exception ex)
             {
+                _logger.Error($"Error occurred while deleting coupon with ID {id}", ex);
                 _response.IsSuccess = false;
                 _response.Message = ex.Message;
             }

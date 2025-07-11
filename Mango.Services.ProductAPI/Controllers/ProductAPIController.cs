@@ -1,4 +1,5 @@
-﻿using Mango.Services.ProductAPI.Models.Dto;
+﻿using log4net;
+using Mango.Services.ProductAPI.Models.Dto;
 using Mango.Services.ProductAPI.Models.Dto.Filters;
 using Mango.Services.ProductAPI.RequestHelpers;
 using Mango.Services.ProductAPI.Service.IService;
@@ -13,6 +14,7 @@ namespace Mango.Services.ProductAPI.Controllers
     {
         private readonly ResponseDto _response;
         private readonly IProductService _productService;
+        private static readonly ILog _logger = LogManager.GetLogger(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);
 
         public ProductAPIController(IProductService productService)
         {
@@ -36,6 +38,7 @@ namespace Mango.Services.ProductAPI.Controllers
             }
             catch (Exception ex)
             {
+                _logger.Error("Error occurred while fetching products:", ex);
                 _response.IsSuccess = false;
                 _response.Message = ex.Message;
             }
@@ -58,6 +61,7 @@ namespace Mango.Services.ProductAPI.Controllers
             }
             catch (Exception ex)
             {
+                _logger.Error($"Error occurred while fetching product with ID {id}:", ex);
                 _response.IsSuccess = false;
                 _response.Message = ex.Message;
             }
@@ -81,6 +85,7 @@ namespace Mango.Services.ProductAPI.Controllers
             }
             catch (Exception ex)
             {
+                _logger.Error("Error occurred while creating product:", ex);
                 _response.IsSuccess = false;
                 _response.Message = ex.Message;
             }
@@ -105,6 +110,7 @@ namespace Mango.Services.ProductAPI.Controllers
             }
             catch (Exception ex)
             {
+                _logger.Error($"Error occurred while updating product with ID {productDto.ProductId}:", ex);
                 _response.IsSuccess = false;
                 _response.Message = ex.Message;
             }
@@ -128,6 +134,7 @@ namespace Mango.Services.ProductAPI.Controllers
             }
             catch (Exception ex)
             {
+                _logger.Error($"Error occurred while deleting product with ID {id}:", ex);
                 _response.IsSuccess = false;
                 _response.Message = ex.Message;
             }
@@ -145,6 +152,7 @@ namespace Mango.Services.ProductAPI.Controllers
             }
             catch (Exception ex)
             {
+                _logger.Error("Error occurred while fetching filters:", ex);
                 _response.IsSuccess = false;
                 _response.Message = ex.Message;
             }
@@ -162,6 +170,7 @@ namespace Mango.Services.ProductAPI.Controllers
             }
             catch (Exception ex)
             {
+                _logger.Error("Error occurred while editing filters:", ex);
                 _response.IsSuccess = false;
                 _response.Message = ex.Message;
             }

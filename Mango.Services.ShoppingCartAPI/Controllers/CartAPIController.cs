@@ -1,4 +1,5 @@
-﻿using Mango.Services.ShoppingCartAPI.Models.Dto;
+﻿using log4net;
+using Mango.Services.ShoppingCartAPI.Models.Dto;
 using Mango.Services.ShoppingCartAPI.Models.Dto.Cart;
 using Mango.Services.ShoppingCartAPI.Service.IService;
 using Microsoft.AspNetCore.Authorization;
@@ -12,6 +13,7 @@ namespace Mango.Services.ShoppingCartAPI.Controllers
     {
         private readonly ResponseDto _response;
         private readonly ICartService _cartService;
+        private static readonly ILog _logger = LogManager.GetLogger(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);
 
         public CartAPIController(ICartService cartService)
         {
@@ -29,6 +31,7 @@ namespace Mango.Services.ShoppingCartAPI.Controllers
             }
             catch (Exception ex)
             {
+                _logger.Error($"Error occurred while fetching cart for user {userId}:", ex);
                 _response.IsSuccess = false;
                 _response.Message = ex.Message;
             }
@@ -51,6 +54,7 @@ namespace Mango.Services.ShoppingCartAPI.Controllers
             }
             catch (Exception ex)
             {
+                _logger.Error("Error occurred while applying coupon to cart:", ex);
                 _response.IsSuccess = false;
                 _response.Message = ex.Message;
             }
@@ -73,6 +77,7 @@ namespace Mango.Services.ShoppingCartAPI.Controllers
             }
             catch (Exception ex)
             {
+                _logger.Error("Error occurred while sending cart email request:", ex);
                 _response.IsSuccess = false;
                 _response.Message = ex.Message;
             }
@@ -96,6 +101,9 @@ namespace Mango.Services.ShoppingCartAPI.Controllers
             }
             catch (Exception ex)
             {
+                _logger.Error(
+                    $"Error occurred while upserting cart for user {inputCartDto.UserId}" +
+                    $"and product {inputCartDto.ProductId}:", ex);
                 _response.IsSuccess = false;
                 _response.Message = ex.Message;
             }
@@ -119,6 +127,9 @@ namespace Mango.Services.ShoppingCartAPI.Controllers
             }
             catch (Exception ex)
             {
+                _logger.Error(
+                    $"Error occurred while removing cart item for user {inputCartDto.UserId} " +
+                    $"and product {inputCartDto.ProductId}:", ex);
                 _response.IsSuccess = false;
                 _response.Message = ex.Message;
             }
