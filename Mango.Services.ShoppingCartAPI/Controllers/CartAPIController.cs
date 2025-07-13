@@ -63,17 +63,18 @@ namespace Mango.Services.ShoppingCartAPI.Controllers
         }
 
         [HttpPost("EmailCartRequest")]
-        public async Task<object> EmailCartRequest(CartHeaderDto cartDto)
+        public async Task<ResponseDto> EmailCartRequest(CartHeaderDto cartDto)
         {
             try
             {
                 var result = await _cartService.EmailCartRequest(cartDto);
-                if (result == null)
+                if (!result)
                 {
                     _response.IsSuccess = false;
                     _response.Message = "Failed to send cart email.";
                     return _response;
                 }
+                _logger.Info($"EmailCartRequest successfully for userId: {cartDto.UserId} and cartHearderId: {cartDto.CartHeaderId}");
                 _response.Result = result;
             }
             catch (Exception ex)

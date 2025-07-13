@@ -31,4 +31,8 @@ nuget:
 
 -update latest version of ef
 -- dotnet tool update --global dotnet-ef
+
+- service bus
+-- created new classLibrary => nuget: added Azure.Messaging.ServiceBus
+-- created new IMessageBus and MessageBus => get config from Azure Service Bus: Settings: Shared access policies
 ```

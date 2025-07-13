@@ -6,7 +6,7 @@ namespace Mango.Services.ShoppingCartAPI.Service.IService
     {
         Task<CartHeaderDto?> GetCart(string userId);
         Task<bool> ApplyCoupon(CartHeaderDto cartDto);
-        Task<object> EmailCartRequest(CartHeaderDto cartDto);
+        Task<bool> EmailCartRequest(CartHeaderDto cartDto);
         Task<CartHeaderDto> CartUpsert(InputCartDto inputCartDto);
         Task<bool> RemoveCart(InputCartDto inputCartDto);
     }
