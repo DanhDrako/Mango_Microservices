@@ -62,9 +62,10 @@ namespace Mango.Services.ShoppingCartAPI.Service
 
         public async Task<bool> EmailCartRequest(CartHeaderDto cartDto)
         {
-            string queueName = _configuration["TopicAndQueueName:EmailShoppingCart"] ??
-                throw new InvalidOperationException("TopicAndQueueName:EmailShoppingCart not found.");
+            string queueName = _configuration["TopicAndQueueNames:EmailShoppingCartQueue"] ??
+                throw new InvalidOperationException("TopicAndQueueNames:EmailShoppingCartQueue not found.");
 
+            // publish message to queue
             await _messageBus.PublishMessage(cartDto, queueName);
             return true;
         }

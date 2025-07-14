@@ -74,7 +74,7 @@ namespace Mango.Services.ShoppingCartAPI.Controllers
                     _response.Message = "Failed to send cart email.";
                     return _response;
                 }
-                _logger.Info($"EmailCartRequest successfully for userId: {cartDto.UserId} and cartHearderId: {cartDto.CartHeaderId}");
+                _logger.Info($"EmailCartRequest successfully for userId: {cartDto.UserId}, userEmail: {cartDto.Email}, cartHearderId: {cartDto.CartHeaderId}");
                 _response.Result = result;
             }
             catch (Exception ex)

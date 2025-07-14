@@ -2,3 +2,4 @@ Start-Process "dotnet" "watch --project Mango.Services.AuthAPI\Mango.Services.Au
 Start-Process "dotnet" "watch --project Mango.Services.CouponAPI\Mango.Services.CouponAPI.csproj"
 Start-Process "dotnet" "watch --project Mango.Services.ProductAPI\Mango.Services.ProductAPI.csproj"
 Start-Process "dotnet" "watch --project Mango.Services.ShoppingCartAPI\Mango.Services.ShoppingCartAPI.csproj"
+Start-Process "dotnet" "watch --project Mango.Services.EmailAPI\Mango.Services.EmailAPI.csproj"

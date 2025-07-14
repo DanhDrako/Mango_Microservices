@@ -31,8 +31,40 @@ nuget:
 
 -update latest version of ef
 -- dotnet tool update --global dotnet-ef
+```
 
-- service bus
+> Azure Service Bus
+
+```bash
+# 1. created
+# 1.1. Azure: serviceBus, queue or TopicName
+-- created new Service Bus (service)
+-- created new Queue or Topic Name (include)
+-- get config from Azure Service Bus: Settings: Shared access policies
+# 1.2. Coding:  new classLibrary and IMessageBus, MessageBus | IAzureServiceBusConsumer, AzureServiceBusConsumer
+# 1.2.1:  new classLibrary and IMessageBus, MessageBus
 -- created new classLibrary => nuget: added Azure.Messaging.ServiceBus
--- created new IMessageBus and MessageBus => get config from Azure Service Bus: Settings: Shared access policies
+-- created new IMessageBus and MessageBus
+-- add config TopicAndQueueNames (map with name of Azure created)
+
+-- MessageBus implement: create function PublishMessage (object message, string topicQueueName) :
+	- created ServiceBusSender with topicQueueName
+	- created ServiceBusMessage with message and with id == new generate UUID
+
+-- created IAzureServiceBusConsumer, AzureServiceBusConsumer
+
+# 1.2.2:  new IAzureServiceBusConsumer, AzureServiceBusConsumer
+-- AzureServiceBusConsumer implement:
+	# constructor
+ 	- CreateProcessor for Queue or Topic Name (ValidateEntityName)
+	# Start function () => executed when this.IApplicationBuilder(this app) start
+	- Start	Processor
+	- Register function listening event from queue (PublishMessage executed) with _registerNameProcessor
+
+	# Stop function () => executed when this.IApplicationBuilder(this app) stop
+	- Stops the Azure Service Bus and disposes of the processors.
+
+# 2. Coding: Implement service bus receiver
+-- Reference classLibrary: Azure.Messaging.ServiceBus
+-- Using PublishMessage function with message and topicQueueName needed.
 ```

@@ -1,4 +1,5 @@
-﻿using Mango.Services.AuthAPI.Data;
+﻿using Mango.MessageBus;
+using Mango.Services.AuthAPI.Data;
 using Mango.Services.AuthAPI.Models;
 using Mango.Services.AuthAPI.Models.Dto;
 using Mango.Services.AuthAPI.Service.IService;
@@ -13,14 +14,20 @@ namespace Mango.Services.AuthAPI.Service
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly RoleManager<IdentityRole> _roleManager;
         private readonly IJwtTokenGenerator _jwtTokenGenerator;
+        private readonly IMessageBus _messageBus;
+        private readonly IConfiguration _configuration;
+
 
         public AuthService(AppDbContext db, IJwtTokenGenerator jwtTokenGenerator,
-            UserManager<ApplicationUser> userManager, RoleManager<IdentityRole> roleManager)
+            UserManager<ApplicationUser> userManager, RoleManager<IdentityRole> roleManager,
+            IMessageBus messageBus, IConfiguration configuration)
         {
             _db = db;
             _jwtTokenGenerator = jwtTokenGenerator;
             _userManager = userManager;
             _roleManager = roleManager;
+            _messageBus = messageBus;
+            _configuration = configuration;
         }
 
         public async Task<bool> AssignRole(string email, string roleName)
@@ -97,6 +104,12 @@ namespace Mango.Services.AuthAPI.Service
                         Name = registrationRequestDto.Name,
                         PhoneNumber = registrationRequestDto.PhoneNumber
                     };
+
+                    string queueName = _configuration["TopicAndQueueNames:RegisterUserQueue"] ??
+                        throw new InvalidOperationException("TopicAndQueueNames:RegisterUserQueue not found.");
+
+                    // publish message to queue
+                    await _messageBus.PublishMessage(userDto.Email, queueName);
 
                     return "";
                 }
