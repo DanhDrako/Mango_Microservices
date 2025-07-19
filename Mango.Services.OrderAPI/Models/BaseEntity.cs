@@ -1,0 +1,8 @@
+﻿namespace Mango.Services.OrderAPI.Models
+{
+    public class BaseEntity
+    {
+        public DateTime CreatedAt { get; set; }
+        public DateTime UpdatedAt { get; set; }
+    }
+}

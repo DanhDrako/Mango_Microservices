@@ -61,6 +61,11 @@ namespace Mango.Services.EmailAPI.Messaging
             _logger.Info("Azure Service Bus Consumer started successfully.");
         }
 
+        /// <summary>
+        /// Handles errors that occur during message processing in the Azure Service Bus.
+        /// </summary>
+        /// <param name="args"></param>
+        /// <returns></returns>
         private Task ErrorHandler(ProcessErrorEventArgs args)
         {
             _logger.Error("Error occurred in the message processing", args.Exception);
