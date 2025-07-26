@@ -1,4 +1,6 @@
-﻿namespace Mango.Services.OrderAPI.Models.Dto
+﻿using Mango.Services.OrderAPI.Utility;
+
+namespace Mango.Services.OrderAPI.Models.Dto.Order
 {
     public class OrderHeaderDto
     {
@@ -10,10 +12,12 @@
         public string? Name { get; set; }
         public string? Phone { get; set; }
         public string? Email { get; set; }
-        public DateTime OrderTime { get; set; }
-        public string? Status { get; set; }
+        public double DeliveryFee { get; set; }
+        public OrderStatus? Status { get; set; }
         public string? PaymentIntentId { get; set; }
-        public string? StripeSessionId { get; set; }
+        public string? ClientSecret { get; set; }
+        public PaymentSummary? PaymentSummary { get; set; }
+        public ShippingAddress? ShippingAddress { get; set; }
         public IEnumerable<OrderDetailsDto> OrderDetails { get; set; } = [];
     }
 }

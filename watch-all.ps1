@@ -4,3 +4,4 @@ Start-Process "dotnet" "watch --project Mango.Services.ProductAPI\Mango.Services
 Start-Process "dotnet" "watch --project Mango.Services.ShoppingCartAPI\Mango.Services.ShoppingCartAPI.csproj"
 Start-Process "dotnet" "watch --project Mango.Services.EmailAPI\Mango.Services.EmailAPI.csproj"
 Start-Process "dotnet" "watch --project Mango.Services.OrderAPI\Mango.Services.OrderAPI.csproj"
+Start-Process "dotnet" "watch --project Mango.Services.PaymentAPI\Mango.Services.PaymentAPI.csproj"

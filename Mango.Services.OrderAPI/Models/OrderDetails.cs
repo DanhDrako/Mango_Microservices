@@ -1,9 +1,8 @@
-﻿using Mango.Services.OrderAPI.Models;
-using Mango.Services.OrderAPI.Models.Dto;
+﻿using Mango.Services.OrderAPI.Models.Dto.Product;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
-namespace Mango.Services.ProductAPI.Models
+namespace Mango.Services.OrderAPI.Models
 {
     public class OrderDetails : BaseEntity
     {
@@ -14,7 +13,7 @@ namespace Mango.Services.ProductAPI.Models
         [NotMapped]
         public ProductDto? Product { get; set; }
 
-        public int Count { get; set; }
+        public int Quantity { get; set; }
         public string ProductName { get; set; }
         public double Price { get; set; }
 

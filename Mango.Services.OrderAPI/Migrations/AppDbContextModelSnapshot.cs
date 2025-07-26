@@ -22,16 +22,13 @@ namespace Mango.Services.OrderAPI.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
-            modelBuilder.Entity("Mango.Services.ProductAPI.Models.OrderDetails", b =>
+            modelBuilder.Entity("Mango.Services.OrderAPI.Models.OrderDetails", b =>
                 {
                     b.Property<int>("OrderDetailsId")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("OrderDetailsId"));
-
-                    b.Property<int>("Count")
-                        .HasColumnType("int");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
@@ -49,6 +46,9 @@ namespace Mango.Services.OrderAPI.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<int>("Quantity")
+                        .HasColumnType("int");
+
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("datetime2");
 
@@ -59,7 +59,7 @@ namespace Mango.Services.OrderAPI.Migrations
                     b.ToTable("OrderDetails");
                 });
 
-            modelBuilder.Entity("Mango.Services.ProductAPI.Models.OrderHeader", b =>
+            modelBuilder.Entity("Mango.Services.OrderAPI.Models.OrderHeader", b =>
                 {
                     b.Property<int>("OrderHeaderId")
                         .ValueGeneratedOnAdd()
@@ -67,11 +67,17 @@ namespace Mango.Services.OrderAPI.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("OrderHeaderId"));
 
+                    b.Property<string>("ClientSecret")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<string>("CouponCode")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
+
+                    b.Property<double>("DeliveryFee")
+                        .HasColumnType("float");
 
                     b.Property<double>("Discount")
                         .HasColumnType("float");
@@ -82,9 +88,6 @@ namespace Mango.Services.OrderAPI.Migrations
                     b.Property<string>("Name")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<DateTime>("OrderTime")
-                        .HasColumnType("datetime2");
-
                     b.Property<double>("OrderTotal")
                         .HasColumnType("float");
 
@@ -94,11 +97,8 @@ namespace Mango.Services.OrderAPI.Migrations
                     b.Property<string>("Phone")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("Status")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("StripeSessionId")
-                        .HasColumnType("nvarchar(max)");
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
 
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("datetime2");
@@ -111,9 +111,9 @@ namespace Mango.Services.OrderAPI.Migrations
                     b.ToTable("OrderHeaders");
                 });
 
-            modelBuilder.Entity("Mango.Services.ProductAPI.Models.OrderDetails", b =>
+            modelBuilder.Entity("Mango.Services.OrderAPI.Models.OrderDetails", b =>
                 {
-                    b.HasOne("Mango.Services.ProductAPI.Models.OrderHeader", "OrderHeader")
+                    b.HasOne("Mango.Services.OrderAPI.Models.OrderHeader", "OrderHeader")
                         .WithMany("OrderDetails")
                         .HasForeignKey("OrderHeaderId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -122,7 +122,83 @@ namespace Mango.Services.OrderAPI.Migrations
                     b.Navigation("OrderHeader");
                 });
 
-            modelBuilder.Entity("Mango.Services.ProductAPI.Models.OrderHeader", b =>
+            modelBuilder.Entity("Mango.Services.OrderAPI.Models.OrderHeader", b =>
+                {
+                    b.OwnsOne("Mango.Services.OrderAPI.Models.PaymentSummary", "PaymentSummary", b1 =>
+                        {
+                            b1.Property<int>("OrderHeaderId")
+                                .HasColumnType("int");
+
+                            b1.Property<string>("Brand")
+                                .IsRequired()
+                                .HasColumnType("nvarchar(max)");
+
+                            b1.Property<int>("ExpMonth")
+                                .HasColumnType("int")
+                                .HasAnnotation("Relational:JsonPropertyName", "exp_month");
+
+                            b1.Property<int>("ExpYear")
+                                .HasColumnType("int")
+                                .HasAnnotation("Relational:JsonPropertyName", "exp_year");
+
+                            b1.Property<int>("Last4")
+                                .HasColumnType("int");
+
+                            b1.HasKey("OrderHeaderId");
+
+                            b1.ToTable("OrderHeaders");
+
+                            b1.WithOwner()
+                                .HasForeignKey("OrderHeaderId");
+                        });
+
+                    b.OwnsOne("Mango.Services.OrderAPI.Models.ShippingAddress", "ShippingAddress", b1 =>
+                        {
+                            b1.Property<int>("OrderHeaderId")
+                                .HasColumnType("int");
+
+                            b1.Property<string>("City")
+                                .IsRequired()
+                                .HasColumnType("nvarchar(max)");
+
+                            b1.Property<string>("Country")
+                                .IsRequired()
+                                .HasColumnType("nvarchar(max)");
+
+                            b1.Property<string>("Line1")
+                                .IsRequired()
+                                .HasColumnType("nvarchar(max)");
+
+                            b1.Property<string>("Line2")
+                                .HasColumnType("nvarchar(max)");
+
+                            b1.Property<string>("Name")
+                                .IsRequired()
+                                .HasColumnType("nvarchar(max)");
+
+                            b1.Property<string>("PostalCode")
+                                .IsRequired()
+                                .HasColumnType("nvarchar(max)")
+                                .HasAnnotation("Relational:JsonPropertyName", "postal_code");
+
+                            b1.Property<string>("State")
+                                .IsRequired()
+                                .HasColumnType("nvarchar(max)");
+
+                            b1.HasKey("OrderHeaderId");
+
+                            b1.ToTable("OrderHeaders");
+
+                            b1.WithOwner()
+                                .HasForeignKey("OrderHeaderId");
+                        });
+
+                    b.Navigation("PaymentSummary");
+
+                    b.Navigation("ShippingAddress");
+                });
+
+            modelBuilder.Entity("Mango.Services.OrderAPI.Models.OrderHeader", b =>
                 {
                     b.Navigation("OrderDetails");
                 });

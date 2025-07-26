@@ -1,4 +1,5 @@
 ﻿using Mango.Services.OrderAPI.Models.Dto;
+using Mango.Services.OrderAPI.Models.Dto.Product;
 using Mango.Services.OrderAPI.Service.IService;
 using Newtonsoft.Json;
 
@@ -11,19 +12,6 @@ namespace Mango.Services.OrderAPI.Service
         public ProductService(IHttpClientFactory clientFactory)
         {
             _httpClientFactory = clientFactory;
-        }
-
-        public async Task<ProductDto> GetProduct(int productId)
-        {
-            var client = _httpClientFactory.CreateClient("Product");
-            var response = await client.GetAsync($"/api/product/{productId}");
-            var apiContent = await response.Content.ReadAsStringAsync();
-            var resp = JsonConvert.DeserializeObject<ResponseDto>(apiContent);
-            if (resp.IsSuccess)
-            {
-                return JsonConvert.DeserializeObject<ProductDto>(Convert.ToString(resp.Result));
-            }
-            return null;
         }
 
         public async Task<IEnumerable<ProductDto>> GetProducts()

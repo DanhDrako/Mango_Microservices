@@ -1,7 +1,7 @@
-﻿using Mango.Services.OrderAPI.Models;
+﻿using Mango.Services.OrderAPI.Utility;
 using System.ComponentModel.DataAnnotations;
 
-namespace Mango.Services.ProductAPI.Models
+namespace Mango.Services.OrderAPI.Models
 {
     public class OrderHeader : BaseEntity
     {
@@ -14,10 +14,14 @@ namespace Mango.Services.ProductAPI.Models
         public string? Name { get; set; }
         public string? Phone { get; set; }
         public string? Email { get; set; }
-        public DateTime OrderTime { get; set; }
-        public string? Status { get; set; }
+        public double DeliveryFee { get; set; }
+        public OrderStatus Status { get; set; } = OrderStatus.Pending;
         public string? PaymentIntentId { get; set; }
-        public string? StripeSessionId { get; set; }
-        public IEnumerable<OrderDetails> OrderDetails { get; set; } = [];
+        public string? ClientSecret { get; set; }
+
+        public PaymentSummary? PaymentSummary { get; set; }
+        public ShippingAddress? ShippingAddress { get; set; }
+
+        public List<OrderDetails> OrderDetails { get; set; } = [];
     }
 }

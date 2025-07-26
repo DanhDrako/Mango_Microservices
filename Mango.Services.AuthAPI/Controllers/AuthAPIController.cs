@@ -1,4 +1,5 @@
 ﻿using log4net;
+using Mango.Services.AuthAPI.Models;
 using Mango.Services.AuthAPI.Models.Dto;
 using Mango.Services.AuthAPI.Service.IService;
 using Microsoft.AspNetCore.Mvc;
@@ -125,6 +126,53 @@ namespace Mango.Services.AuthAPI.Controllers
                 _response.Message = "An error occurred while processing your request.";
                 return StatusCode(500, _response);
             }
+        }
+
+        [HttpPost("address")]
+        public async Task<ResponseDto> CreateOrUpdateAddress(Address address)
+        {
+            try
+            {
+                var response = await _authService.CreateOrUpdateAddress(address, User.Identity.Name);
+                if (response == null)
+                {
+                    _response.IsSuccess = false;
+                    _response.Message = "Failed to create or update address.";
+                    return _response;
+                }
+                _response.Result = response;
+            }
+            catch (Exception ex)
+            {
+                _logger.Error("An error occurred while create or update address.", ex);
+                _response.IsSuccess = false;
+                _response.Message = ex.Message;
+            }
+            return _response;
+
+        }
+
+        [HttpGet("address")]
+        public async Task<ResponseDto> GetSavedAddress()
+        {
+            try
+            {
+                var response = await _authService.GetSavedAddress(User.Identity.Name);
+                if (response == null)
+                {
+                    _response.IsSuccess = false;
+                    _response.Message = "Failed to fetching address.";
+                    return _response;
+                }
+                _response.Result = response;
+            }
+            catch (Exception ex)
+            {
+                _logger.Error("An error occurred while fetching address.", ex);
+                _response.IsSuccess = false;
+                _response.Message = ex.Message;
+            }
+            return _response;
         }
     }
 }

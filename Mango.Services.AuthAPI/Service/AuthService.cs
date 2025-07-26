@@ -4,6 +4,7 @@ using Mango.Services.AuthAPI.Models;
 using Mango.Services.AuthAPI.Models.Dto;
 using Mango.Services.AuthAPI.Service.IService;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using System.IdentityModel.Tokens.Jwt;
 
 namespace Mango.Services.AuthAPI.Service
@@ -171,6 +172,34 @@ namespace Mango.Services.AuthAPI.Service
         public Task<bool> Logout()
         {
             return Task.FromResult(true);
+        }
+
+        public async Task<Address?> CreateOrUpdateAddress(Address address, string userName)
+        {
+            var user = await _userManager.Users
+                .Include(x => x.Address)
+                .FirstOrDefaultAsync(x => x.UserName == userName);
+
+            if (user == null) return null;
+            user.Address = address;
+
+            var result = await _userManager.UpdateAsync(user);
+
+            if (!result.Succeeded) return null;
+
+            return user.Address;
+        }
+
+        public async Task<Address?> GetSavedAddress(string userName)
+        {
+            var address = await _userManager.Users
+                            .Where(x => x.UserName == userName)
+                            .Select(x => x.Address)
+                            .FirstOrDefaultAsync();
+
+            if (address == null) return null;
+
+            return address;
         }
     }
 }

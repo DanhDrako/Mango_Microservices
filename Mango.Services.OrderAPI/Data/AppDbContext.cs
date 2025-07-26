@@ -1,5 +1,4 @@
 ﻿using Mango.Services.OrderAPI.Models;
-using Mango.Services.ProductAPI.Models;
 using Microsoft.EntityFrameworkCore;
 
 namespace Mango.Services.OrderAPI.Data

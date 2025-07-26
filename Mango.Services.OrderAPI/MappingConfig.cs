@@ -1,6 +1,7 @@
 ﻿using AutoMapper;
-using Mango.Services.OrderAPI.Models.Dto;
-using Mango.Services.ProductAPI.Models;
+using Mango.Services.OrderAPI.Models;
+using Mango.Services.OrderAPI.Models.Dto.Cart;
+using Mango.Services.OrderAPI.Models.Dto.Order;
 
 namespace Mango.Services.OrderAPI
 {
