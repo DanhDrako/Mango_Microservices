@@ -56,7 +56,7 @@ namespace Mango.Services.OrderAPI.Service
             return _mapper.Map<IEnumerable<OrderHeaderDto>>(objList);
         }
 
-        private double CalculateDeliveryFee(double subtotal)
+        private static double CalculateDeliveryFee(double subtotal)
         {
             return subtotal > 10000 ? 0 : 500;
         }
@@ -96,6 +96,7 @@ namespace Mango.Services.OrderAPI.Service
 
             // Check if the order exists by either OrderHeaderId or PaymentIntentId
             var existingOrder = await _db.OrderHeaders
+                .Include(o => o.OrderDetails)
                 .FirstOrDefaultAsync(x => x.OrderHeaderId == orderHeaderDto.OrderHeaderId ||
                                           x.PaymentIntentId == orderHeaderDto.PaymentIntentId) ??
                                           throw new Exception("Order not found");
