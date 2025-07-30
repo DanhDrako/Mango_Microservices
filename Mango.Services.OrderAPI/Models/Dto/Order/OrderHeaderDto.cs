@@ -5,7 +5,7 @@ namespace Mango.Services.OrderAPI.Models.Dto.Order
     public class OrderHeaderDto
     {
         public int OrderHeaderId { get; set; }
-        public string? UserId { get; set; }
+        public required string UserId { get; set; }
         public string? CouponCode { get; set; }
         public double Discount { get; set; }
         public double OrderTotal { get; set; }

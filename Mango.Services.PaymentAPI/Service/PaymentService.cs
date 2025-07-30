@@ -49,7 +49,7 @@ namespace Mango.Services.PaymentAPI.Service
                 {
                     Amount = paymentDto.Total + deliveryFee
                 };
-                await service.UpdateAsync(paymentDto.PaymentIntentId, options);
+                intent = await service.UpdateAsync(paymentDto.PaymentIntentId, options);
             }
             return intent;
         }
@@ -60,16 +60,21 @@ namespace Mango.Services.PaymentAPI.Service
 
             var existingOrder = await _orderService.GetOrder(paymentDto.OrderHeaderId) ?? throw new Exception("Failied to get existingOrder");
 
+            // set data updating for OrderAPI
             existingOrder.OrderTotal = paymentDto.Total;
             existingOrder.DeliveryFee = paymentDto.Total > 10000 ? 0 : 500;
             existingOrder.PaymentIntentId = intent.Id;
             existingOrder.ClientSecret = intent.ClientSecret;
 
-            var result = await _orderService.UpdateHeaderDto(existingOrder) ?? throw new Exception("Failed to update order header with payment intent details.");
+            var result = await _orderService.UpdateHeaderDto(existingOrder)
+                ?? throw new Exception("Failed to update order header with payment intent details.");
 
+            // set data return for current API
             paymentDto.OrderHeaderId = result.OrderHeaderId;
             paymentDto.PaymentIntentId = intent.Id;
             paymentDto.ClientSecret = intent.ClientSecret;
+            paymentDto.UserId = result.UserId;
+
             return paymentDto;
         }
 

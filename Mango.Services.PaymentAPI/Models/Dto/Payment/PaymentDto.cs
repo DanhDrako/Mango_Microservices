@@ -2,6 +2,7 @@
 {
     public class PaymentDto
     {
+        public string UserId { get; set; }
         public int OrderHeaderId { get; set; }
         public required long Total { get; set; }
         public string? PaymentIntentId { get; set; }

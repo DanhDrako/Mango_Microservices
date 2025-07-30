@@ -86,8 +86,7 @@ namespace Mango.Services.OrderAPI.Service
 
             await _db.SaveChangesAsync();
 
-            orderHeaderDto.OrderHeaderId = orderCreated.OrderHeaderId;
-            return orderHeaderDto;
+            return _mapper.Map<OrderHeaderDto>(orderCreated);
         }
 
         public async Task<OrderHeaderDto> UpdateOrder(OrderHeaderDto orderHeaderDto)
