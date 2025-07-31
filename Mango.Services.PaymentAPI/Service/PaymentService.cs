@@ -116,14 +116,9 @@ namespace Mango.Services.PaymentAPI.Service
                 order.Status = OrderStatus.PaymentReceived;
             }
 
-            var result = await _orderService.UpdateHeaderDto(order);
-
-            if (result == null) throw new Exception("Failed to update order status to PaymentReceived or PaymentMismatch.");
-            //var basket = await context.Baskets.FirstOrDefaultAsync(x => x.PaymentIntentId == intent.Id);
-
-            //if (basket != null) context.Baskets.Remove(basket);
-
-            //await context.SaveChangesAsync();
+            // Clear order details to avoid unnecessary data transfer
+            order.OrderDetails = [];
+            _ = await _orderService.UpdateHeaderDto(order) ?? throw new Exception("Failed to update order status to PaymentReceived or PaymentMismatch.");
         }
 
         private async Task HandlePaymentIntentFailed(PaymentIntent intent)
@@ -146,8 +141,7 @@ namespace Mango.Services.PaymentAPI.Service
             order.Status = OrderStatus.PaymentFailed;
 
             // Update order status
-            var result = await _orderService.UpdateHeaderDto(order);
-            if (result == null) throw new Exception("Failed to update order status to PaymentFailed.");
+            _ = await _orderService.UpdateHeaderDto(order) ?? throw new Exception("Failed to update order status to PaymentFailed.");
         }
     }
 }

@@ -2,7 +2,9 @@
 using Mango.Services.AuthAPI.Models;
 using Mango.Services.AuthAPI.Models.Dto;
 using Mango.Services.AuthAPI.Service.IService;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.IdentityModel.Tokens.Jwt;
 
 namespace Mango.Services.AuthAPI.Controllers
 {
@@ -128,12 +130,13 @@ namespace Mango.Services.AuthAPI.Controllers
             }
         }
 
+        [Authorize]
         [HttpPost("address")]
         public async Task<ResponseDto> CreateOrUpdateAddress(Address address)
         {
             try
             {
-                var response = await _authService.CreateOrUpdateAddress(address, User.Identity.Name);
+                var response = await _authService.CreateOrUpdateAddress(address, User.FindFirst(JwtRegisteredClaimNames.Name)?.Value);
                 if (response == null)
                 {
                     _response.IsSuccess = false;
@@ -152,12 +155,13 @@ namespace Mango.Services.AuthAPI.Controllers
 
         }
 
+        [Authorize]
         [HttpGet("address")]
         public async Task<ResponseDto> GetSavedAddress()
         {
             try
             {
-                var response = await _authService.GetSavedAddress(User.Identity.Name);
+                var response = await _authService.GetSavedAddress(User.FindFirst(JwtRegisteredClaimNames.Name)?.Value);
                 if (response == null)
                 {
                     _response.IsSuccess = false;

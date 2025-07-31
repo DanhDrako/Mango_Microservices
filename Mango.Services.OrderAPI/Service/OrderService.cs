@@ -25,11 +25,24 @@ namespace Mango.Services.OrderAPI.Service
 
         public async Task<OrderHeaderDto> GetOrderById(int orderHeaderId)
         {
+            // 1. Get all products
+            IEnumerable<ProductDto> productList = await _productService.GetProducts();
+
+            // 2. Get the order header with details
             OrderHeader orderHeader = await _db.OrderHeaders
                 .Include(o => o.OrderDetails)
                 .FirstAsync(o => o.OrderHeaderId == orderHeaderId);
 
-            return _mapper.Map<OrderHeaderDto>(orderHeader);
+            // 3. Map to DTO
+            var orderHeaderDto = _mapper.Map<OrderHeaderDto>(orderHeader);
+
+            // 4. Attach ProductDto to each OrderDetailsDto
+            foreach (var detail in orderHeaderDto.OrderDetails)
+            {
+                detail.Product = productList.FirstOrDefault(p => p.ProductId == detail.ProductId);
+            }
+
+            return orderHeaderDto;
         }
 
         public async Task<IEnumerable<OrderHeaderDto>> GetOrdersByUserId(OrderStatus? status, string? userId, bool isAdmin)
