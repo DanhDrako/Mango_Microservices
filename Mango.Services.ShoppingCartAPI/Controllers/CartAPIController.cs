@@ -31,7 +31,7 @@ namespace Mango.Services.ShoppingCartAPI.Controllers
             }
             catch (Exception ex)
             {
-                _logger.Error($"Error occurred while fetching cart for user {userId}:", ex);
+                _logger.Error($"Error occurred while GetCart for user {userId}:", ex);
                 _response.IsSuccess = false;
                 _response.Message = ex.Message;
             }
@@ -55,7 +55,7 @@ namespace Mango.Services.ShoppingCartAPI.Controllers
             }
             catch (Exception ex)
             {
-                _logger.Error("Error occurred while applying coupon to cart:", ex);
+                _logger.Error("Error occurred while ApplyCoupon to cart:", ex);
                 _response.IsSuccess = false;
                 _response.Message = ex.Message;
             }
@@ -79,7 +79,7 @@ namespace Mango.Services.ShoppingCartAPI.Controllers
             }
             catch (Exception ex)
             {
-                _logger.Error("Error occurred while sending cart email request:", ex);
+                _logger.Error("Error occurred while EmailCartRequest:", ex);
                 _response.IsSuccess = false;
                 _response.Message = ex.Message;
             }
@@ -105,7 +105,7 @@ namespace Mango.Services.ShoppingCartAPI.Controllers
             catch (Exception ex)
             {
                 _logger.Error(
-                    $"Error occurred while upserting cart for userId: {inputCartDto.UserId}" +
+                    $"Error occurred while CartUpsert for userId: {inputCartDto.UserId}" +
                     $"and productId: {inputCartDto.ProductId}:", ex);
                 _response.IsSuccess = false;
                 _response.Message = ex.Message;
@@ -132,8 +132,34 @@ namespace Mango.Services.ShoppingCartAPI.Controllers
             catch (Exception ex)
             {
                 _logger.Error(
-                    $"Error occurred while removing cart item for userId: {inputCartDto.UserId} " +
+                    $"Error occurred while RemoveCart for userId: {inputCartDto.UserId} " +
                     $"and productId: {inputCartDto.ProductId}:", ex);
+                _response.IsSuccess = false;
+                _response.Message = ex.Message;
+            }
+            return _response;
+        }
+
+        [Authorize]
+        [HttpDelete("RemoveItems")]
+        public async Task<ResponseDto> RemoveItems(ListItemsDto listItemsDto)
+        {
+            try
+            {
+                var result = await _cartService.RemoveItems(listItemsDto);
+                if (!result)
+                {
+                    _response.IsSuccess = false;
+                    _response.Message = "Failed to remove cart item.";
+                    return _response;
+                }
+                _logger.Info($"RemoveItems successfully for userId: {listItemsDto.UserId}");
+                _response.Result = "Cart item removed successfully.";
+            }
+            catch (Exception ex)
+            {
+                _logger.Error(
+                    $"Error occurred while RemoveItems for userId: {listItemsDto.UserId}", ex);
                 _response.IsSuccess = false;
                 _response.Message = ex.Message;
             }

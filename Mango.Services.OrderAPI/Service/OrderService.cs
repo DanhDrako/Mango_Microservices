@@ -7,6 +7,7 @@ using Mango.Services.OrderAPI.Models.Dto.Product;
 using Mango.Services.OrderAPI.Service.IService;
 using Mango.Services.OrderAPI.Utility;
 using Microsoft.EntityFrameworkCore;
+using System.Linq.Expressions;
 
 namespace Mango.Services.OrderAPI.Service
 {
@@ -23,7 +24,13 @@ namespace Mango.Services.OrderAPI.Service
             _productService = productService;
         }
 
+
         public async Task<OrderHeaderDto> GetOrderById(int orderHeaderId)
+        {
+            return await GetOrderHeaderDtoAsync(o => o.OrderHeaderId == orderHeaderId);
+        }
+
+        private async Task<OrderHeaderDto> GetOrderHeaderDtoAsync(Expression<Func<OrderHeader, bool>> predicate)
         {
             // 1. Get all products
             IEnumerable<ProductDto> productList = await _productService.GetProducts();
@@ -31,7 +38,7 @@ namespace Mango.Services.OrderAPI.Service
             // 2. Get the order header with details
             OrderHeader orderHeader = await _db.OrderHeaders
                 .Include(o => o.OrderDetails)
-                .FirstAsync(o => o.OrderHeaderId == orderHeaderId);
+                .FirstAsync(predicate);
 
             // 3. Map to DTO
             var orderHeaderDto = _mapper.Map<OrderHeaderDto>(orderHeader);
@@ -77,8 +84,8 @@ namespace Mango.Services.OrderAPI.Service
         public async Task<OrderHeaderDto> CreateOrder(CartHeaderDto cartHeader)
         {
             OrderHeaderDto orderHeaderDto = _mapper.Map<OrderHeaderDto>(cartHeader);
+            orderHeaderDto.OrderTime = DateTime.Now;
             orderHeaderDto.DeliveryFee = CalculateDeliveryFee(orderHeaderDto.OrderTotal);
-
             orderHeaderDto.OrderDetails = _mapper.Map<IEnumerable<OrderDetailsDto>>(cartHeader.CartDetails);
             // Get productList
             IEnumerable<ProductDto> productList = await _productService.GetProducts();

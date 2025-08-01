@@ -51,6 +51,16 @@ namespace Mango.Services.ShoppingCartAPI.Models
             if (item.Quantity <= 0) CartDetails.Remove(item);
         }
 
+        public void RemoveItems(int[] productIds)
+        {
+            foreach (var productId in productIds)
+            {
+                var item = FindCartDetails(productId);
+                if (item == null) return;
+                CartDetails.Remove(item);
+            }
+        }
+
         private CartDetails? FindCartDetails(int productId)
         {
             return CartDetails.FirstOrDefault(item => item.ProductId == productId);

@@ -15,18 +15,6 @@ namespace Mango.Services.PaymentAPI.Service
             _httpClientFactory = clientFactory;
         }
 
-        public async Task<OrderHeaderDto> GetOrder(string paymentIntentId)
-        {
-            var client = _httpClientFactory.CreateClient("Order");
-            var response = await client.GetAsync($"/api/order/{paymentIntentId}");
-            var apiContent = await response.Content.ReadAsStringAsync();
-            var resp = JsonConvert.DeserializeObject<ResponseDto>(apiContent);
-            if (resp.IsSuccess)
-            {
-                return JsonConvert.DeserializeObject<OrderHeaderDto>(Convert.ToString(resp.Result));
-            }
-            return null;
-        }
         public async Task<OrderHeaderDto> GetOrder(int orderHeaderId)
         {
             var client = _httpClientFactory.CreateClient("Order");

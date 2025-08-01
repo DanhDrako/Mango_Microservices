@@ -1,7 +1,5 @@
 ﻿using Mango.Services.PaymentAPI.Models.Dto.Payment;
-using Mango.Services.PaymentAPI.Models.Dto.Product;
 using Mango.Services.PaymentAPI.Service.IService;
-using Mango.Services.PaymentAPI.Utility;
 using Stripe;
 
 namespace Mango.Services.PaymentAPI.Service
@@ -9,19 +7,12 @@ namespace Mango.Services.PaymentAPI.Service
     public class PaymentService : IPaymentService
     {
         private readonly IConfiguration _config;
-        private readonly IHttpContextAccessor _httpContextAccessor;
         private readonly IOrderService _orderService;
-        private readonly IProductService _productService;
-        private readonly HttpContext _httpContext;
 
-        public PaymentService(IConfiguration config, IOrderService orderService, IHttpContextAccessor httpContextAccessor, IProductService productService)
+        public PaymentService(IConfiguration config, IOrderService orderService)
         {
             _config = config;
             _orderService = orderService;
-            _httpContextAccessor = httpContextAccessor;
-            // Use IHttpContextAccessor to access HttpContext
-            _httpContext = _httpContextAccessor.HttpContext ?? throw new InvalidOperationException("HttpContext is not available.");
-            _productService = productService;
         }
 
         public async Task<PaymentIntent> CreateOrUpdatePaymentIntent(PaymentDto paymentDto)
@@ -76,72 +67,6 @@ namespace Mango.Services.PaymentAPI.Service
             paymentDto.UserId = result.UserId;
 
             return paymentDto;
-        }
-
-        public async Task<bool> ProcessPayment(string json)
-        {
-            var stripeEvent = ConstructStripeEvent(json);
-
-            if (stripeEvent.Data.Object is not PaymentIntent intent) throw new Exception("Invalid event data");
-
-            if (intent.Status == "succeeded") await HandlePaymentIntentSucceeded(intent);
-            else await HandlePaymentIntentFailed(intent);
-
-            return true;
-        }
-
-        private Event ConstructStripeEvent(string json)
-        {
-            try
-            {
-                return EventUtility.ConstructEvent(json, _httpContext.Request.Headers["Stripe-Signature"], _config["StripeSettings:WhSecret"]);
-            }
-            catch (Exception ex)
-            {
-                throw new StripeException("Invalid signature", ex);
-            }
-        }
-
-        private async Task HandlePaymentIntentSucceeded(PaymentIntent intent)
-        {
-            // Get order by paymentIntentId
-            var order = await _orderService.GetOrder(intent.Id) ?? throw new Exception("Order not found for payment intent");
-
-            if (order.OrderTotal != intent.Amount)
-            {
-                order.Status = OrderStatus.PaymentMismatch;
-            }
-            else
-            {
-                order.Status = OrderStatus.PaymentReceived;
-            }
-
-            // Clear order details to avoid unnecessary data transfer
-            order.OrderDetails = [];
-            _ = await _orderService.UpdateHeaderDto(order) ?? throw new Exception("Failed to update order status to PaymentReceived or PaymentMismatch.");
-        }
-
-        private async Task HandlePaymentIntentFailed(PaymentIntent intent)
-        {
-            // Get order by paymentIntentId
-            var order = await _orderService.GetOrder(intent.Id) ?? throw new Exception("Order not found for payment intent");
-
-            // Get productList
-            IEnumerable<ProductDto> productList = await _productService.GetProducts();
-            foreach (var item in order.OrderDetails)
-            {
-                var productItem = productList.FirstOrDefault(x => x.ProductId == item.ProductId)
-                    ?? throw new Exception("Product not found for order item");
-
-                productItem.QuantityInStock += item.Quantity;
-            }
-
-            // TODO: need to update to database product
-
-            order.Status = OrderStatus.PaymentFailed;
-
-            // Update order status
-            _ = await _orderService.UpdateHeaderDto(order) ?? throw new Exception("Failed to update order status to PaymentFailed.");
         }
     }
 }

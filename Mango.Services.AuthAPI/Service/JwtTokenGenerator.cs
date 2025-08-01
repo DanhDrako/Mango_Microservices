@@ -5,6 +5,7 @@ using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
+using JwtRegisteredClaimNames = Microsoft.IdentityModel.JsonWebTokens.JwtRegisteredClaimNames;
 
 namespace Mango.Services.AuthAPI.Service
 {
@@ -27,6 +28,7 @@ namespace Mango.Services.AuthAPI.Service
                 new(JwtRegisteredClaimNames.Email, applicationUser.Email),
                 new(JwtRegisteredClaimNames.Sub, applicationUser.Id),
                 new(JwtRegisteredClaimNames.Name, applicationUser.UserName),
+                new(JwtRegisteredClaimNames.PhoneNumber, applicationUser.PhoneNumber)
             };
 
             claimList.AddRange(roles.Select(role => new Claim(ClaimTypes.Role, role)));

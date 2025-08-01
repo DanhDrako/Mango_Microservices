@@ -9,7 +9,11 @@ namespace Mango.Services.PaymentAPI.Models.Dto.Order
         public string? CouponCode { get; set; }
         public double Discount { get; set; }
         public double OrderTotal { get; set; }
+        public string? Name { get; set; }
+        public string? Phone { get; set; }
+        public string? Email { get; set; }
         public double DeliveryFee { get; set; }
+        public DateTime OrderTime { get; set; }
         public OrderStatus Status { get; set; }
         public string? PaymentIntentId { get; set; }
         public string? ClientSecret { get; set; }

@@ -152,7 +152,7 @@ namespace Mango.Services.AuthAPI.Service
             }
 
             var claims = jwtDecoded.Claims
-            .Where(c => c.Type == "email" || c.Type == "role" || c.Type == "sub")
+            .Where(c => c.Type == "email" || c.Type == "role" || c.Type == "sub" || c.Type == "phone_number" || c.Type == "name")
             .ToList();
 
             if (!claims.Any())
@@ -164,7 +164,9 @@ namespace Mango.Services.AuthAPI.Service
             {
                 ID = claims.FirstOrDefault(c => c.Type == "sub")?.Value,
                 Email = claims.FirstOrDefault(c => c.Type == "email")?.Value,
-                Role = claims.FirstOrDefault(c => c.Type == "role")?.Value
+                Role = claims.FirstOrDefault(c => c.Type == "role")?.Value,
+                PhoneNumber = claims.FirstOrDefault(c => c.Type == "phone_number")?.Value,
+                Name = claims.FirstOrDefault(c => c.Type == "name")?.Value,
             };
             return await Task.FromResult(userInfo);
         }

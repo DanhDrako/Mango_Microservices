@@ -15,6 +15,7 @@ namespace Mango.Services.OrderAPI.Models
         public string? Phone { get; set; }
         public string? Email { get; set; }
         public double DeliveryFee { get; set; }
+        public DateTime OrderTime { get; set; }
         public OrderStatus Status { get; set; } = OrderStatus.Pending;
         public string? PaymentIntentId { get; set; }
         public string? ClientSecret { get; set; }

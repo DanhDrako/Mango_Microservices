@@ -107,8 +107,20 @@ namespace Mango.Services.ShoppingCartAPI.Service
         {
             var cart = await RetrieveCartByUserId(inputCartDto.UserId) ?? throw new Exception("Cart not found for user: " + inputCartDto.UserId);
 
-            // remove item from basket
+            // remove item from cart
             cart.RemoveItem(inputCartDto.ProductId, inputCartDto.Quantity);
+
+            var result = await _db.SaveChangesAsync() > 0;
+            if (result) return true;
+            return false;
+        }
+
+        public async Task<bool> RemoveItems(ListItemsDto listItemsDto)
+        {
+            var cart = await RetrieveCartByUserId(listItemsDto.UserId) ?? throw new Exception("Cart not found for user: " + listItemsDto.UserId);
+
+            // remove items from cart
+            cart.RemoveItems(listItemsDto.Items);
 
             var result = await _db.SaveChangesAsync() > 0;
             if (result) return true;

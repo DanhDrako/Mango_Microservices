@@ -9,5 +9,6 @@ namespace Mango.Services.ShoppingCartAPI.Service.IService
         Task<bool> EmailCartRequest(CartHeaderDto cartDto);
         Task<CartHeaderDto> CartUpsert(InputCartDto inputCartDto);
         Task<bool> RemoveCart(InputCartDto inputCartDto);
+        Task<bool> RemoveItems(ListItemsDto listItemsDto);
     }
 }

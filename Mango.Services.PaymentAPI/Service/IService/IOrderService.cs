@@ -4,7 +4,6 @@ namespace Mango.Services.PaymentAPI.Service.IService
 {
     public interface IOrderService
     {
-        Task<OrderHeaderDto> GetOrder(string paymentIntentId);
         Task<OrderHeaderDto> GetOrder(int orderHeaderId);
         Task<OrderHeaderDto> UpdateHeaderDto(OrderHeaderDto orderHeaderDto);
     }
