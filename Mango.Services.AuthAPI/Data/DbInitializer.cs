@@ -43,7 +43,8 @@ namespace Mango.Services.AuthAPI.Data
                 var user = new ApplicationUser
                 {
                     UserName = "danhdc2001@gmail.com",
-                    Email = "danhdc2001@gmail.com"
+                    Email = "danhdc2001@gmail.com",
+                    Name = "danhdc2001"
                 };
 
                 await userManager.CreateAsync(user, "A@123456a");
@@ -52,11 +53,12 @@ namespace Mango.Services.AuthAPI.Data
                 var admin = new ApplicationUser
                 {
                     UserName = "admin@gmail.com",
-                    Email = "admin@gmail.com"
+                    Email = "admin@gmail.com",
+                    Name = "admin"
                 };
 
                 await userManager.CreateAsync(admin, "A@123456a");
-                await userManager.AddToRoleAsync(user, "ADMIN");
+                await userManager.AddToRoleAsync(admin, "ADMIN");
             }
 
         }
