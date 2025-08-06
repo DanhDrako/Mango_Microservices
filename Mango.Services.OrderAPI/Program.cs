@@ -1,10 +1,11 @@
 using AutoMapper;
 using log4net;
 using log4net.Config;
-using Mango.MessageBus;
 using Mango.Services.OrderAPI;
 using Mango.Services.OrderAPI.Data;
+using Mango.Services.OrderAPI.Extension;
 using Mango.Services.OrderAPI.Extensions;
+using Mango.Services.OrderAPI.Messaging;
 using Mango.Services.OrderAPI.Service;
 using Mango.Services.OrderAPI.Service.IService;
 using Mango.Services.OrderAPI.Utility;
@@ -33,11 +34,12 @@ builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
 builder.Services.AddScoped<IOrderService, OrderService>();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<BackendApiAuthenticationHttpClientHandler>();
-builder.Services.AddScoped<IProductService, ProductService>();
-builder.Services.AddScoped<IMessageBus, MessageBus>();
 
+builder.Services.AddScoped<IProductService, ProductService>();
 builder.Services.AddHttpClient("Product", u => u.BaseAddress =
 new Uri(builder.Configuration["ServiceUrls:ProductAPI"])).AddHttpMessageHandler<BackendApiAuthenticationHttpClientHandler>();
+
+builder.Services.AddSingleton<IAzureServiceBusConsumer, AzureServiceBusConsumer>();
 
 builder.Services.AddControllers();
 
@@ -93,5 +95,6 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+app.UseAzureServiceBusConsumer();
 
 app.Run();

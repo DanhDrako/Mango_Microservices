@@ -1,4 +1,5 @@
-﻿using log4net;
+﻿using AutoMapper;
+using log4net;
 using Mango.Services.OrderAPI.Models.Dto;
 using Mango.Services.OrderAPI.Models.Dto.Cart;
 using Mango.Services.OrderAPI.Models.Dto.Order;
@@ -16,12 +17,15 @@ namespace Mango.Services.OrderAPI.Controllers
     {
         private readonly ResponseDto _response;
         private readonly IOrderService _orderService;
+        private readonly IMapper _mapper;
+
         private static readonly ILog _logger = LogManager.GetLogger(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);
 
-        public OrderAPIController(IOrderService orderService)
+        public OrderAPIController(IOrderService orderService, IMapper mapper)
         {
             _response = new();
             _orderService = orderService;
+            _mapper = mapper;
         }
 
         [HttpGet]
@@ -61,7 +65,7 @@ namespace Mango.Services.OrderAPI.Controllers
                     _response.Message = "Fetch order failed.";
                     return _response;
                 }
-                _response.Result = order;
+                _response.Result = _mapper.Map<OrderHeaderDto>(order);
             }
             catch (Exception ex)
             {

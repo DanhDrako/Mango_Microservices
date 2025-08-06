@@ -4,6 +4,7 @@ using Mango.Services.PaymentAPI.Models.Dto.Payment;
 using Mango.Services.PaymentAPI.Service.IService;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Stripe;
 
 namespace Mango.Services.PaymentAPI.Controllers
 {
@@ -44,6 +45,40 @@ namespace Mango.Services.PaymentAPI.Controllers
                 _response.Message = $"Error create or update payment intent: {ex.Message}";
             }
             return _response;
+        }
+
+        [AllowAnonymous]
+        [HttpPost("webhook")]
+        public async Task<ResponseDto> StripeWebhook()
+        {
+            var json = await new StreamReader(Request.Body).ReadToEndAsync();
+
+            try
+            {
+                var stripeResult = await _paymentService.ProcessPayment(json);
+                if (!stripeResult)
+                {
+                    _response.IsSuccess = false;
+                    _response.Message = "Process payment failed";
+                    return _response;
+                }
+                _logger.Info($"Process payment successfully.");
+                _response.Result = stripeResult;
+            }
+            catch (StripeException ex)
+            {
+                _logger.Error("Stripe webhook error", ex);
+                _response.IsSuccess = false;
+                _response.Message = $"Error create or update payment intent: {ex.Message}";
+            }
+            catch (Exception ex)
+            {
+                _logger.Error("Unexpected error in Stripe webhook", ex);
+                _response.IsSuccess = false;
+                _response.Message = $"Error create or update payment intent: {ex.Message}";
+            }
+            return _response;
+
         }
     }
 }

@@ -1,8 +1,10 @@
 ﻿using AutoMapper;
+using log4net;
 using Mango.Services.OrderAPI.Data;
 using Mango.Services.OrderAPI.Models;
 using Mango.Services.OrderAPI.Models.Dto.Cart;
 using Mango.Services.OrderAPI.Models.Dto.Order;
+using Mango.Services.OrderAPI.Models.Dto.Payment;
 using Mango.Services.OrderAPI.Models.Dto.Product;
 using Mango.Services.OrderAPI.Service.IService;
 using Mango.Services.OrderAPI.Utility;
@@ -16,6 +18,7 @@ namespace Mango.Services.OrderAPI.Service
         private readonly IMapper _mapper;
         private readonly AppDbContext _db;
         private readonly IProductService _productService;
+        private static readonly ILog _logger = LogManager.GetLogger(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);
 
         public OrderService(IMapper mapper, AppDbContext db, IProductService productService)
         {
@@ -25,12 +28,17 @@ namespace Mango.Services.OrderAPI.Service
         }
 
 
-        public async Task<OrderHeaderDto> GetOrderById(int orderHeaderId)
+        public async Task<OrderHeader> GetOrderById(int orderHeaderId)
         {
             return await GetOrderHeaderDtoAsync(o => o.OrderHeaderId == orderHeaderId);
         }
 
-        private async Task<OrderHeaderDto> GetOrderHeaderDtoAsync(Expression<Func<OrderHeader, bool>> predicate)
+        public async Task<OrderHeader> GetOrderById(string paymentIntentId)
+        {
+            return await GetOrderHeaderDtoAsync(o => o.PaymentIntentId == paymentIntentId);
+        }
+
+        private async Task<OrderHeader> GetOrderHeaderDtoAsync(Expression<Func<OrderHeader, bool>> predicate)
         {
             // 1. Get all products
             IEnumerable<ProductDto> productList = await _productService.GetProducts();
@@ -41,15 +49,15 @@ namespace Mango.Services.OrderAPI.Service
                 .FirstAsync(predicate);
 
             // 3. Map to DTO
-            var orderHeaderDto = _mapper.Map<OrderHeaderDto>(orderHeader);
+            //var orderHeaderDto = _mapper.Map<OrderHeaderDto>(orderHeader);
 
             // 4. Attach ProductDto to each OrderDetailsDto
-            foreach (var detail in orderHeaderDto.OrderDetails)
+            foreach (var detail in orderHeader.OrderDetails)
             {
                 detail.Product = productList.FirstOrDefault(p => p.ProductId == detail.ProductId);
             }
 
-            return orderHeaderDto;
+            return orderHeader;
         }
 
         public async Task<IEnumerable<OrderHeaderDto>> GetOrdersByUserId(OrderStatus? status, string? userId, bool isAdmin)
@@ -138,6 +146,33 @@ namespace Mango.Services.OrderAPI.Service
         public Task<OrderHeaderDto> UpdateOrderStatus(int orderHeaderId, string status)
         {
             throw new NotImplementedException();
+        }
+
+        public async Task<bool> UpdateOrderStatus(PaymentQueueDto paymentQueueDto)
+        {
+            try
+            {
+                var existingOrder = await GetOrderById(paymentQueueDto.PaymentIntentId);
+
+                if ((existingOrder.OrderTotal + existingOrder.DeliveryFee) != paymentQueueDto.Total)
+                {
+                    existingOrder.Status = OrderStatus.PaymentMismatch;
+                }
+                else
+                {
+                    existingOrder.Status = paymentQueueDto.Status;
+                }
+
+                _db.OrderHeaders.Update(existingOrder);
+                await _db.SaveChangesAsync();
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.Error($"Error updating order status: {ex.Message}");
+                return false;
+            }
+
         }
     }
 }

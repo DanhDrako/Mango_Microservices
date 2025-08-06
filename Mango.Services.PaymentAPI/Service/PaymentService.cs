@@ -1,18 +1,32 @@
-﻿using Mango.Services.PaymentAPI.Models.Dto.Payment;
+﻿using Mango.MessageBus;
+using Mango.Services.PaymentAPI.Models.Dto.Payment;
 using Mango.Services.PaymentAPI.Service.IService;
+using Mango.Services.PaymentAPI.Utility;
 using Stripe;
 
 namespace Mango.Services.PaymentAPI.Service
 {
     public class PaymentService : IPaymentService
     {
+        private const string PaymentCreatedTopicName = "TopicAndQueueNames:PaymentCreatedTopic";
         private readonly IConfiguration _config;
         private readonly IOrderService _orderService;
+        private readonly IConfiguration _configuration;
+        private readonly IHttpContextAccessor _httpContextAccessor;
+        private readonly HttpContext _httpContext;
+        private readonly IMessageBus _messageBus;
 
-        public PaymentService(IConfiguration config, IOrderService orderService)
+        public PaymentService(IConfiguration config, IOrderService orderService,
+            IHttpContextAccessor httpContextAccessor, IConfiguration configuration,
+            IMessageBus messageBus)
         {
             _config = config;
             _orderService = orderService;
+            _configuration = configuration;
+            _httpContextAccessor = httpContextAccessor;
+            // Use IHttpContextAccessor to access HttpContext
+            _httpContext = _httpContextAccessor.HttpContext ?? throw new InvalidOperationException("HttpContext is not available.");
+            _messageBus = messageBus;
         }
 
         public async Task<PaymentIntent> CreateOrUpdatePaymentIntent(PaymentDto paymentDto)
@@ -67,6 +81,62 @@ namespace Mango.Services.PaymentAPI.Service
             paymentDto.UserId = result.UserId;
 
             return paymentDto;
+        }
+
+        public async Task<bool> ProcessPayment(string json)
+        {
+            var stripeEvent = ConstructStripeEvent(json);
+
+            if (stripeEvent.Data.Object is not PaymentIntent intent) throw new Exception("Invalid event data");
+
+            if (intent.Status == "succeeded") await HandlePaymentIntentSucceeded(intent);
+            else await HandlePaymentIntentFailed(intent);
+
+            return true;
+        }
+
+        private Event ConstructStripeEvent(string json)
+        {
+            try
+            {
+                return EventUtility.ConstructEvent(json, _httpContext.Request.Headers["Stripe-Signature"], _config["StripeSettings:WhSecret"]);
+            }
+            catch (Exception ex)
+            {
+                throw new StripeException("Invalid signature", ex);
+            }
+        }
+
+        private async Task HandlePaymentIntentSucceeded(PaymentIntent intent)
+        {
+            // need sent event to update orderStatus, clear order details, and update product stock
+            string topicName = _configuration.GetValue<string>(PaymentCreatedTopicName) ??
+                throw new Exception("Cannot get PaymentTopicName");
+
+            PaymentQueueDto paymentQueueDto = new()
+            {
+                PaymentIntentId = intent.Id,
+                Status = OrderStatus.PaymentReceived,
+                Total = intent.Amount
+            };
+
+            await _messageBus.PublishMessage(paymentQueueDto, topicName);
+        }
+
+        private async Task HandlePaymentIntentFailed(PaymentIntent intent)
+        {
+            // need sent event to update orderStatus, and update product stock
+            string topicName = _configuration.GetValue<string>(PaymentCreatedTopicName) ??
+                throw new Exception("Cannot get PaymentTopicName");
+
+            PaymentQueueDto paymentQueueDto = new()
+            {
+                PaymentIntentId = intent.Id,
+                Status = OrderStatus.PaymentFailed,
+                Total = intent.Amount
+            };
+
+            await _messageBus.PublishMessage(paymentQueueDto, topicName);
         }
     }
 }

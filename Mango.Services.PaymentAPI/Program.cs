@@ -1,5 +1,6 @@
 using log4net;
 using log4net.Config;
+using Mango.MessageBus;
 using Mango.Services.PaymentAPI.Extensions;
 using Mango.Services.PaymentAPI.Service;
 using Mango.Services.PaymentAPI.Service.IService;
@@ -16,6 +17,7 @@ XmlConfigurator.Configure(logRepository, new FileInfo("log4net.config"));
 
 // Add services to the container.
 
+builder.Services.AddScoped<IMessageBus, MessageBus>();
 builder.Services.AddScoped<IPaymentService, PaymentService>();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<IOrderService, OrderService>();
