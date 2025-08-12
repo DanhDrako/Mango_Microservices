@@ -413,3 +413,4 @@ Mango.Services.ProductAPI/wwwroot/ProductImages/
 /Mango.Services.EmailAPI/appsettings.json
 /Mango.Services.OrderAPI/appsettings.json
 /Mango.Services.PaymentAPI/appsettings.json
+/Mango.Services.RewardAPI/appsettings.json

@@ -10,6 +10,7 @@ namespace Mango.Services.OrderAPI.Service.IService
     {
         Task<IEnumerable<OrderHeaderDto>> GetOrdersByUserId(OrderStatus? status, string? userId, bool isAdmin);
         Task<OrderHeader> GetOrderById(int orderHeaderId);
+        Task<OrderHeader> GetOrderById(string paymentIntentId);
         Task<OrderHeaderDto> CreateOrder(CartHeaderDto cartHeader);
         Task<OrderHeaderDto> UpdateOrder(OrderHeaderDto orderHeaderDto);
         Task<OrderHeaderDto> UpdateOrderStatus(int orderHeaderId, string status);

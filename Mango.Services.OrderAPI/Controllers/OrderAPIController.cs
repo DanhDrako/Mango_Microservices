@@ -53,6 +53,30 @@ namespace Mango.Services.OrderAPI.Controllers
             return _response;
         }
 
+        [AllowAnonymous]
+        [HttpGet("intent/{id}")]
+        public async Task<ResponseDto> Get(string id)
+        {
+            try
+            {
+                var order = await _orderService.GetOrderById(id);
+                if (order == null)
+                {
+                    _response.IsSuccess = false;
+                    _response.Message = "Fetch order failed.";
+                    return _response;
+                }
+                _response.Result = _mapper.Map<OrderHeaderDto>(order);
+            }
+            catch (Exception ex)
+            {
+                _logger.Error($"Error occurred while fetching order by paymentIntentId: {id}", ex);
+                _response.IsSuccess = false;
+                _response.Message = ex.Message;
+            }
+            return _response;
+        }
+
         [HttpGet("{id:int}")]
         public async Task<ResponseDto> Get(int id)
         {
@@ -69,7 +93,7 @@ namespace Mango.Services.OrderAPI.Controllers
             }
             catch (Exception ex)
             {
-                _logger.Error("Error occurred while fetching order:", ex);
+                _logger.Error($"Error occurred while fetching order by orderHeaderId: {id}", ex);
                 _response.IsSuccess = false;
                 _response.Message = ex.Message;
             }
