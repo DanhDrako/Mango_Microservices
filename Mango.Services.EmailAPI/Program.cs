@@ -1,7 +1,6 @@
 using log4net;
 using log4net.Config;
 using Mango.Services.EmailAPI.Data;
-using Mango.Services.EmailAPI.Extension;
 using Mango.Services.EmailAPI.Messaging;
 using Mango.Services.EmailAPI.Service;
 using Mango.Services.EmailAPI.Service.IService;
@@ -20,7 +19,7 @@ builder.Services.AddDbContext<AppDbContext>(option =>
 });
 
 builder.Services.AddSingleton<IEmailService, EmailService>();
-builder.Services.AddSingleton<IAzureServiceBusConsumer, AzureServiceBusConsumer>();
+builder.Services.AddHostedService<RabbitMQAuthConsumer>();
 
 builder.Services.AddControllers();
 
@@ -43,5 +42,5 @@ app.UseAuthorization();
 
 app.MapControllers();
 await DbInitializer.InitDb(app);
-app.UseAzureServiceBusConsumer();
+//app.UseAzureServiceBusConsumer();
 app.Run();
