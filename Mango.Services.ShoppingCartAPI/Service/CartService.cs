@@ -1,5 +1,5 @@
 ﻿using AutoMapper;
-using Mango.MessageBus;
+using Mango.Message.RabbitMQ.Sender.Interface;
 using Mango.Services.ShoppingCartAPI.Data;
 using Mango.Services.ShoppingCartAPI.Models;
 using Mango.Services.ShoppingCartAPI.Models.Dto;
@@ -15,11 +15,11 @@ namespace Mango.Services.ShoppingCartAPI.Service
         private readonly AppDbContext _db;
         private readonly IProductService _productService;
         private readonly ICouponService _couponService;
-        private readonly IMessageBus _messageBus;
+        private readonly IRabbitMQSender _messageBus;
         private readonly IConfiguration _configuration;
 
         public CartService(IMapper mapper, AppDbContext db, IProductService productService,
-            ICouponService couponService, IMessageBus messageBus, IConfiguration configuration)
+            ICouponService couponService, IRabbitMQSender messageBus, IConfiguration configuration)
         {
             _mapper = mapper;
             _db = db;

@@ -1,21 +1,17 @@
-﻿using Mango.Services.EmailAPI.Service.IService;
-using Newtonsoft.Json;
-using RabbitMQ.Client;
+﻿using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 using System.Text;
 
-namespace Mango.Services.EmailAPI.Messaging
+namespace Mango.Services.EmailAPI.Messaging.RabbitMQ.Base
 {
-    public class RabbitMQAuthConsumer : BackgroundService
+    public abstract class RabbitMQBaseConsumer : BackgroundService // Mark the class as abstract
     {
-        private readonly IConfiguration _configuration;
-        private readonly IEmailService _emailService;
+        protected abstract string QueueName { get; }
         private IConnection _connection;
         private IChannel _channel;
-        public RabbitMQAuthConsumer(IConfiguration configuration, IEmailService emailService)
+
+        public RabbitMQBaseConsumer()
         {
-            _configuration = configuration;
-            _emailService = emailService;
             Task.Run(() => CreateConnection()).Wait(); // Ensure the connect
         }
 
@@ -31,7 +27,7 @@ namespace Mango.Services.EmailAPI.Messaging
                 };
                 _connection = await factory.CreateConnectionAsync();
                 _channel = await _connection.CreateChannelAsync();
-                await _channel.QueueDeclareAsync(_configuration.GetValue<string>("TopicAndQueueNames:RegisterUserQueue"), false, false, false, null);
+                await _channel.QueueDeclareAsync(QueueName, false, false, false, null);
             }
             catch (Exception ex)
             {
@@ -49,18 +45,15 @@ namespace Mango.Services.EmailAPI.Messaging
             consumer.ReceivedAsync += async (ch, ea) =>
             {
                 var body = Encoding.UTF8.GetString(ea.Body.ToArray());
-                var message = JsonConvert.DeserializeObject<string>(body);
-                await HandleMessage(message);
+                //var message = JsonConvert.DeserializeObject<object>(body);
+                HandleMessage(body);
 
                 await _channel.BasicAckAsync(ea.DeliveryTag, false);
             };
 
-            await _channel.BasicConsumeAsync(_configuration.GetValue<string>("TopicAndQueueNames:RegisterUserQueue"), false, consumer);
+            await _channel.BasicConsumeAsync(QueueName, false, consumer);
         }
 
-        private async Task HandleMessage(string email)
-        {
-            await _emailService.EmailRegisterUserAndLog(email);
-        }
+        protected abstract void HandleMessage(string body); // No changes needed here
     }
 }

@@ -1,7 +1,7 @@
 using log4net;
 using log4net.Config;
 using Mango.Services.EmailAPI.Data;
-using Mango.Services.EmailAPI.Messaging;
+using Mango.Services.EmailAPI.Messaging.RabbitMQ.Implement;
 using Mango.Services.EmailAPI.Service;
 using Mango.Services.EmailAPI.Service.IService;
 using Microsoft.EntityFrameworkCore;
@@ -20,6 +20,7 @@ builder.Services.AddDbContext<AppDbContext>(option =>
 
 builder.Services.AddSingleton<IEmailService, EmailService>();
 builder.Services.AddHostedService<RabbitMQAuthConsumer>();
+builder.Services.AddHostedService<RabbitMQCartConsumer>();
 
 builder.Services.AddControllers();
 

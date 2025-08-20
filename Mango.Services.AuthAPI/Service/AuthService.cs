@@ -1,7 +1,7 @@
-﻿using Mango.Services.AuthAPI.Data;
+﻿using Mango.Message.RabbitMQ.Sender.Interface;
+using Mango.Services.AuthAPI.Data;
 using Mango.Services.AuthAPI.Models;
 using Mango.Services.AuthAPI.Models.Dto;
-using Mango.Services.AuthAPI.RabbitMQSender;
 using Mango.Services.AuthAPI.Service.IService;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -15,13 +15,13 @@ namespace Mango.Services.AuthAPI.Service
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly RoleManager<IdentityRole> _roleManager;
         private readonly IJwtTokenGenerator _jwtTokenGenerator;
-        private readonly IRabbitMQAuthMessageSender _messageBus;
+        private readonly IRabbitMQSender _messageBus;
         private readonly IConfiguration _configuration;
 
 
         public AuthService(AppDbContext db, IJwtTokenGenerator jwtTokenGenerator,
             UserManager<ApplicationUser> userManager, RoleManager<IdentityRole> roleManager,
-            IRabbitMQAuthMessageSender messageBus, IConfiguration configuration)
+            IRabbitMQSender messageBus, IConfiguration configuration)
         {
             _db = db;
             _jwtTokenGenerator = jwtTokenGenerator;
@@ -109,7 +109,7 @@ namespace Mango.Services.AuthAPI.Service
                     throw new InvalidOperationException("TopicAndQueueNames:RegisterUserQueue not found.");
 
                 // publish message to queue
-                await _messageBus.SendMessage(userDto.Email, queueName);
+                await _messageBus.PublishMessage(userDto.Email, queueName);
 
                 return "";
             }
