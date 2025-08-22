@@ -4,7 +4,7 @@ using log4net.Config;
 using Mango.Services.OrderAPI;
 using Mango.Services.OrderAPI.Data;
 using Mango.Services.OrderAPI.Extensions;
-using Mango.Services.OrderAPI.Messaging.RabbitMQ.Implement;
+using Mango.Services.OrderAPI.Messaging.RabbitMQ;
 using Mango.Services.OrderAPI.Service;
 using Mango.Services.OrderAPI.Service.IService;
 using Mango.Services.OrderAPI.Utility;

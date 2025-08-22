@@ -1,16 +1,16 @@
-﻿using Mango.Services.OrderAPI.Messaging.RabbitMQ.Base;
+﻿using Mango.Message.RabbitMQ.Consumer.Base;
 using Mango.Services.OrderAPI.Models.Dto.Payment;
 using Mango.Services.OrderAPI.Service.IService;
 using Newtonsoft.Json;
 
-namespace Mango.Services.OrderAPI.Messaging.RabbitMQ.Implement
+namespace Mango.Services.OrderAPI.Messaging.RabbitMQ
 {
     public class RabbitMQOrderConsumer(
         IConfiguration configuration,
         IServiceScopeFactory scopeFactory)
-        : RabbitMQBaseConsumer()
+        : RabbitMQBaseConsumer
     {
-        protected override string ExchangeName => configuration["TopicAndQueueNames:PaymentCreatedTopic"] ?? "";
+        protected override string? ExchangeName => configuration["TopicAndQueueNames:PaymentCreatedTopic"] ?? "";
 
         // Fix for CS0029: Convert the string to a KeyValuePair<string, string>
         protected override KeyValuePair<string, string> Queue => new(
@@ -23,7 +23,10 @@ namespace Mango.Services.OrderAPI.Messaging.RabbitMQ.Implement
             using var scope = scopeFactory.CreateScope();
             var orderService = scope.ServiceProvider.GetRequiredService<IOrderService>();
             var message = JsonConvert.DeserializeObject<PaymentQueueDto>(body);
-            await orderService.UpdateOrderStatus(message);
+            if (message != null)
+            {
+                await orderService.UpdateOrderStatus(message);
+            }
         }
     }
 }

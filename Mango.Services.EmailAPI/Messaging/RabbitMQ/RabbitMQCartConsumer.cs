@@ -1,22 +1,25 @@
-﻿using Mango.Services.EmailAPI.Messaging.RabbitMQ.Base;
+﻿using Mango.Message.RabbitMQ.Consumer.Base;
 using Mango.Services.EmailAPI.Models.Dto.Cart;
 using Mango.Services.EmailAPI.Service.IService;
 using Newtonsoft.Json;
 
-namespace Mango.Services.EmailAPI.Messaging.RabbitMQ.Implement
+namespace Mango.Services.EmailAPI.Messaging.RabbitMQ
 {
     public class RabbitMQCartConsumer(
         IConfiguration configuration,
         IEmailService emailService)
         : RabbitMQBaseConsumer
     {
-        protected override string QueueName => configuration[("TopicAndQueueNames:EmailShoppingCartQueue")] ??
+        protected override string? QueueName => configuration["TopicAndQueueNames:EmailShoppingCartQueue"] ??
             throw new ArgumentNullException("EmailShoppingCartQueue");
 
-        protected override void HandleMessage(string body)
+        protected override async Task HandleMessageAsync(string body)
         {
             var message = JsonConvert.DeserializeObject<CartHeaderDto>(body);
-            emailService.EmailCartAndLog(message);
+            if (message != null)
+            {
+                await emailService.EmailCartAndLog(message);
+            }
         }
     }
 }

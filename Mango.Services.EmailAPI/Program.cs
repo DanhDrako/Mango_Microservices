@@ -1,7 +1,7 @@
 using log4net;
 using log4net.Config;
 using Mango.Services.EmailAPI.Data;
-using Mango.Services.EmailAPI.Messaging.RabbitMQ.Implement;
+using Mango.Services.EmailAPI.Messaging.RabbitMQ;
 using Mango.Services.EmailAPI.Service;
 using Mango.Services.EmailAPI.Service.IService;
 using Microsoft.EntityFrameworkCore;

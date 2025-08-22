@@ -1,7 +1,7 @@
 using log4net;
 using log4net.Config;
 using Mango.Services.RewardAPI.Data;
-using Mango.Services.RewardAPI.Messaging.RabbitMQ.Implement;
+using Mango.Services.RewardAPI.Messaging.RabbitMQ;
 using Mango.Services.RewardAPI.Service;
 using Mango.Services.RewardAPI.Service.IService;
 using Mango.Services.RewardAPI.Utility;

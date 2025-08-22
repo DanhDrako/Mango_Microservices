@@ -28,4 +28,8 @@
     <Folder Include="Controllers\" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\Mango.MessageRabbit\Mango.Message.RabbitMQ.csproj" />
+  </ItemGroup>
+
 </Project>
