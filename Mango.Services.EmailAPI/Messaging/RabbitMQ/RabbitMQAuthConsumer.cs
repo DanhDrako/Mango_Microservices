@@ -9,7 +9,8 @@ namespace Mango.Services.EmailAPI.Messaging.RabbitMQ
         IEmailService emailService)
         : RabbitMQBaseConsumer
     {
-        protected override string? QueueName => configuration["TopicAndQueueNames:RegisterUserQueue"] ?? "";
+        protected override string? QueueName => configuration["TopicAndQueueNames:RegisterUserQueue"] ??
+            throw new ArgumentNullException("RegisterUserQueue");
 
         protected override async Task HandleMessageAsync(string body)
         {

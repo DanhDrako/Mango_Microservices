@@ -10,7 +10,8 @@ namespace Mango.Services.OrderAPI.Messaging.RabbitMQ
         IServiceScopeFactory scopeFactory)
         : RabbitMQBaseConsumer
     {
-        protected override string? ExchangeName => configuration["TopicAndQueueNames:PaymentCreatedTopic"] ?? "";
+        protected override string? ExchangeName => configuration["TopicAndQueueNames:PaymentCreatedTopic"] ??
+            throw new ArgumentNullException("PaymentCreatedTopic");
 
         // Fix for CS0029: Convert the string to a KeyValuePair<string, string>
         protected override KeyValuePair<string, string> Queue => new(

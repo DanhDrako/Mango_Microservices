@@ -10,7 +10,8 @@ namespace Mango.Services.RewardAPI.Messaging.RabbitMQ
         IServiceScopeFactory scopeFactory)
         : RabbitMQBaseConsumer
     {
-        protected override string? ExchangeName => configuration["TopicAndQueueNames:PaymentCreatedTopic"] ?? "";
+        protected override string? ExchangeName => configuration["TopicAndQueueNames:PaymentCreatedTopic"] ??
+            throw new ArgumentNullException("PaymentCreatedTopic");
 
         protected override KeyValuePair<string, string> Queue => new(
             configuration["TopicAndQueueNames:PaymentCreatedSub_Reward_Key"] ?? throw new ArgumentNullException("PaymentCreatedSub_Reward_Key"),
