@@ -1,8 +1,11 @@
 using log4net;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
+using Newtonsoft.Json;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 using System.Text;
+using Mango.Message.RabbitMQ.Models;
 
 namespace Mango.Message.RabbitMQ.Consumer.Base
 {
@@ -66,6 +69,38 @@ namespace Mango.Message.RabbitMQ.Consumer.Base
         protected virtual KeyValuePair<string, string> Queue => default;
 
         /// <summary>
+        /// Gets a value indicating whether Dead Letter Queue (DLQ) handling is enabled.
+        /// Override this property to enable DLQ functionality for failed message processing.
+        /// </summary>
+        /// <remarks>
+        /// When enabled, failed messages will be routed to a dead letter exchange and queue
+        /// instead of being lost or infinitely retried. Default is true for production safety.
+        /// </remarks>
+        protected virtual bool EnableDeadLetterQueue => true;
+
+        /// <summary>
+        /// Gets the maximum number of retry attempts before sending a message to the Dead Letter Queue.
+        /// Override this property to customize retry behavior for your specific use case.
+        /// </summary>
+        /// <remarks>
+        /// Messages will be retried this many times before being sent to the DLQ.
+        /// Set to 0 to disable retries and send failed messages directly to DLQ.
+        /// Default is 3 retries, which is suitable for most production scenarios.
+        /// </remarks>
+        protected virtual int MaxRetryAttempts => 3;
+
+        /// <summary>
+        /// Gets the delay in milliseconds between retry attempts.
+        /// Override this property to customize retry timing for your specific use case.
+        /// </summary>
+        /// <remarks>
+        /// This delay helps prevent overwhelming downstream services during temporary failures.
+        /// Uses exponential backoff: delay * (attempt^2) for progressive delays.
+        /// Default is 5000ms (5 seconds), which provides reasonable spacing between retries.
+        /// </remarks>
+        protected virtual int RetryDelayMilliseconds => 5000;
+
+        /// <summary>
         /// Logger instance for this class using log4net for structured logging.
         /// </summary>
         /// <remarks>
@@ -89,6 +124,248 @@ namespace Mango.Message.RabbitMQ.Consumer.Base
         /// Each consumer should use its own dedicated channel for thread safety.
         /// </summary>
         private IChannel? _channel;
+
+        /// <summary>
+        /// Dead Letter Queue name for failed messages.
+        /// Automatically generated based on the main queue name with ".dlq" suffix.
+        /// </summary>
+        private string? _deadLetterQueueName;
+
+        /// <summary>
+        /// Dead Letter Exchange name for routing failed messages.
+        /// Automatically generated based on the main exchange name with ".dlx" suffix.
+        /// </summary>
+        private string? _deadLetterExchangeName;
+
+        #endregion
+
+        #region Health Monitoring Fields
+
+        /// <summary>
+        /// Current health status of the RabbitMQ consumer.
+        /// Used for health checks and monitoring integration.
+        /// </summary>
+        private HealthStatus _healthStatus = HealthStatus.Unhealthy;
+
+        /// <summary>
+        /// Last successful message processing timestamp.
+        /// Used to detect if the consumer is actively processing messages.
+        /// </summary>
+        private DateTime? _lastSuccessfulProcessing;
+
+        /// <summary>
+        /// Last health check timestamp for tracking health monitoring frequency.
+        /// </summary>
+        private DateTime _lastHealthCheck = DateTime.UtcNow;
+
+        /// <summary>
+        /// Counter for successful message processing.
+        /// Used for health monitoring and metrics collection.
+        /// </summary>
+        private long _successfulMessageCount = 0;
+
+        /// <summary>
+        /// Counter for failed message processing.
+        /// Used for health monitoring and metrics collection.
+        /// </summary>
+        private long _failedMessageCount = 0;
+
+        /// <summary>
+        /// Lock object for thread-safe health status updates.
+        /// </summary>
+        private readonly object _healthLock = new object();
+
+        #endregion
+
+        #region Health Monitoring Properties and Methods
+
+        /// <summary>
+        /// Gets the current health status of the RabbitMQ consumer.
+        /// Can be used by health check systems and monitoring tools.
+        /// </summary>
+        public HealthStatus HealthStatus 
+        { 
+            get 
+            { 
+                lock (_healthLock) 
+                { 
+                    return _healthStatus; 
+                } 
+            } 
+        }
+
+        /// <summary>
+        /// Gets the last successful message processing timestamp.
+        /// Returns null if no messages have been successfully processed yet.
+        /// </summary>
+        public DateTime? LastSuccessfulProcessing 
+        { 
+            get 
+            { 
+                lock (_healthLock) 
+                { 
+                    return _lastSuccessfulProcessing; 
+                } 
+            } 
+        }
+
+        /// <summary>
+        /// Gets the total number of successfully processed messages.
+        /// </summary>
+        public long SuccessfulMessageCount 
+        { 
+            get 
+            { 
+                lock (_healthLock) 
+                { 
+                    return _successfulMessageCount; 
+                } 
+            } 
+        }
+
+        /// <summary>
+        /// Gets the total number of failed message processing attempts.
+        /// </summary>
+        public long FailedMessageCount 
+        { 
+            get 
+            { 
+                lock (_healthLock) 
+                { 
+                    return _failedMessageCount; 
+                } 
+            } 
+        }
+
+        /// <summary>
+        /// Gets detailed health information for the RabbitMQ consumer.
+        /// Includes connection status, message processing metrics, and diagnostic information.
+        /// </summary>
+        public RabbitMQHealthInfo GetHealthInfo()
+        {
+            lock (_healthLock)
+            {
+                return new RabbitMQHealthInfo
+                {
+                    HealthStatus = _healthStatus,
+                    ConsumerName = this.GetType().Name,
+                    IsConnectionOpen = _connection?.IsOpen ?? false,
+                    IsChannelOpen = _channel?.IsOpen ?? false,
+                    QueueName = QueueName ?? Queue.Value,
+                    ExchangeName = ExchangeName,
+                    LastSuccessfulProcessing = _lastSuccessfulProcessing,
+                    LastHealthCheck = _lastHealthCheck,
+                    SuccessfulMessageCount = _successfulMessageCount,
+                    FailedMessageCount = _failedMessageCount,
+                    DeadLetterQueueEnabled = EnableDeadLetterQueue,
+                    MaxRetryAttempts = MaxRetryAttempts,
+                    RetryDelayMilliseconds = RetryDelayMilliseconds
+                };
+            }
+        }
+
+        /// <summary>
+        /// Checks and updates the health status of the RabbitMQ consumer.
+        /// Called periodically to assess connection health and processing activity.
+        /// </summary>
+        /// <returns>The current health status after the check</returns>
+        public HealthStatus CheckHealth()
+        {
+            lock (_healthLock)
+            {
+                _lastHealthCheck = DateTime.UtcNow;
+
+                try
+                {
+                    // Check connection and channel status
+                    bool isConnectionHealthy = _connection?.IsOpen == true;
+                    bool isChannelHealthy = _channel?.IsOpen == true;
+
+                    if (!isConnectionHealthy || !isChannelHealthy)
+                    {
+                        _healthStatus = HealthStatus.Unhealthy;
+                        _logger.Warn($"[RabbitMQBaseConsumer] Health check failed - Connection: {isConnectionHealthy}, Channel: {isChannelHealthy}");
+                        return _healthStatus;
+                    }
+
+                    // Check if messages are being processed (within last 5 minutes for active systems)
+                    var fiveMinutesAgo = DateTime.UtcNow.AddMinutes(-5);
+                    bool recentlyProcessedMessages = _lastSuccessfulProcessing.HasValue && 
+                                                    _lastSuccessfulProcessing.Value > fiveMinutesAgo;
+
+                    // Calculate failure rate
+                    double totalMessages = _successfulMessageCount + _failedMessageCount;
+                    double failureRate = totalMessages > 0 ? (_failedMessageCount / totalMessages) : 0;
+
+                    if (failureRate > 0.1) // More than 10% failure rate
+                    {
+                        _healthStatus = HealthStatus.Degraded;
+                        _logger.Warn($"[RabbitMQBaseConsumer] Health degraded - High failure rate: {failureRate:P2}");
+                    }
+                    else if (isConnectionHealthy && isChannelHealthy)
+                    {
+                        _healthStatus = HealthStatus.Healthy;
+                    }
+                    else
+                    {
+                        _healthStatus = HealthStatus.Degraded;
+                    }
+
+                    _logger.Debug($"[RabbitMQBaseConsumer] Health check completed - Status: {_healthStatus}");
+                    return _healthStatus;
+                }
+                catch (Exception ex)
+                {
+                    _healthStatus = HealthStatus.Unhealthy;
+                    _logger.Error($"[RabbitMQBaseConsumer] Health check failed with exception: {ex.Message}", ex);
+                    return _healthStatus;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Updates health status after successful message processing.
+        /// Called internally when messages are processed successfully.
+        /// </summary>
+        private void UpdateHealthOnSuccess()
+        {
+            lock (_healthLock)
+            {
+                _successfulMessageCount++;
+                _lastSuccessfulProcessing = DateTime.UtcNow;
+                
+                // If connection and channel are healthy, mark as healthy
+                if (_connection?.IsOpen == true && _channel?.IsOpen == true)
+                {
+                    _healthStatus = HealthStatus.Healthy;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Updates health status after failed message processing.
+        /// Called internally when message processing fails.
+        /// </summary>
+        private void UpdateHealthOnFailure()
+        {
+            lock (_healthLock)
+            {
+                _failedMessageCount++;
+                
+                // Calculate failure rate to determine health status
+                double totalMessages = _successfulMessageCount + _failedMessageCount;
+                double failureRate = _failedMessageCount / totalMessages;
+                
+                if (failureRate > 0.2) // More than 20% failure rate
+                {
+                    _healthStatus = HealthStatus.Unhealthy;
+                }
+                else if (failureRate > 0.1) // More than 10% failure rate
+                {
+                    _healthStatus = HealthStatus.Degraded;
+                }
+            }
+        }
 
         #endregion
 
@@ -193,6 +470,12 @@ namespace Mango.Message.RabbitMQ.Consumer.Base
                 // Create a dedicated channel for this consumer
                 _channel = await _connection.CreateChannelAsync();
 
+                // Update health status after successful connection
+                lock (_healthLock)
+                {
+                    _healthStatus = HealthStatus.Healthy;
+                }
+
                 _logger.Info("[RabbitMQBaseConsumer] Connection and channel created successfully");
 
                 #endregion
@@ -206,11 +489,29 @@ namespace Mango.Message.RabbitMQ.Consumer.Base
 
                     _logger.Debug($"[RabbitMQBaseConsumer] Setting up exchange-based consumption - Exchange: {ExchangeName}, Queue: {Queue.Value}, Routing Key: {Queue.Key}");
 
+                    // Setup Dead Letter Queue infrastructure if enabled
+                    if (EnableDeadLetterQueue)
+                    {
+                        await SetupDeadLetterQueueAsync(ExchangeName, Queue.Value);
+                    }
+
                     // Declare the exchange
                     await _channel.ExchangeDeclareAsync(ExchangeName, ExchangeType.Direct, durable: false);
 
-                    // Declare the queue
-                    await _channel.QueueDeclareAsync(Queue.Value, durable: false, exclusive: false, autoDelete: false, arguments: null);
+                    // Prepare queue arguments for DLQ support
+                    Dictionary<string, object?>? queueArguments = null;
+                    if (EnableDeadLetterQueue && !string.IsNullOrEmpty(_deadLetterExchangeName))
+                    {
+                        queueArguments = new Dictionary<string, object?>
+                        {
+                            { "x-dead-letter-exchange", _deadLetterExchangeName },
+                            { "x-dead-letter-routing-key", $"{Queue.Key}.failed" }
+                        };
+                        _logger.Debug($"[RabbitMQBaseConsumer] Queue configured with DLQ support - DLX: {_deadLetterExchangeName}");
+                    }
+
+                    // Declare the queue with DLQ arguments
+                    await _channel.QueueDeclareAsync(Queue.Value, durable: false, exclusive: false, autoDelete: false, arguments: queueArguments);
 
                     // Bind queue to exchange with routing key
                     await _channel.QueueBindAsync(Queue.Value, ExchangeName, Queue.Key);
@@ -225,8 +526,26 @@ namespace Mango.Message.RabbitMQ.Consumer.Base
 
                     _logger.Debug($"[RabbitMQBaseConsumer] Setting up simple queue consumption - Queue: {QueueName}");
 
-                    // Declare the queue for direct consumption
-                    await _channel.QueueDeclareAsync(QueueName, durable: false, exclusive: false, autoDelete: false, arguments: null);
+                    // Setup Dead Letter Queue infrastructure if enabled
+                    if (EnableDeadLetterQueue)
+                    {
+                        await SetupDeadLetterQueueAsync("", QueueName);
+                    }
+
+                    // Prepare queue arguments for DLQ support
+                    Dictionary<string, object?>? queueArguments = null;
+                    if (EnableDeadLetterQueue && !string.IsNullOrEmpty(_deadLetterExchangeName))
+                    {
+                        queueArguments = new Dictionary<string, object?>
+                        {
+                            { "x-dead-letter-exchange", _deadLetterExchangeName },
+                            { "x-dead-letter-routing-key", $"{QueueName}.failed" }
+                        };
+                        _logger.Debug($"[RabbitMQBaseConsumer] Queue configured with DLQ support - DLX: {_deadLetterExchangeName}");
+                    }
+
+                    // Declare the queue for direct consumption with DLQ arguments
+                    await _channel.QueueDeclareAsync(QueueName, durable: false, exclusive: false, autoDelete: false, arguments: queueArguments);
 
                     _logger.Info("[RabbitMQBaseConsumer] Simple queue infrastructure setup completed");
 
@@ -257,6 +576,186 @@ namespace Mango.Message.RabbitMQ.Consumer.Base
                 
                 // Re-throw to allow calling code to handle the failure appropriately
                 throw;
+            }
+        }
+
+        /// <summary>
+        /// Sets up Dead Letter Queue infrastructure for handling failed messages.
+        /// Creates the dead letter exchange and queue with appropriate bindings.
+        /// </summary>
+        /// <param name="originalExchangeName">The original exchange name (empty for simple queues)</param>
+        /// <param name="originalQueueName">The original queue name</param>
+        /// <returns>A task representing the asynchronous DLQ setup operation</returns>
+        /// <remarks>
+        /// This method creates:
+        /// 1. Dead Letter Exchange (DLX) with ".dlx" suffix
+        /// 2. Dead Letter Queue (DLQ) with ".dlq" suffix  
+        /// 3. Binding between DLX and DLQ for failed message routing
+        /// 
+        /// Failed messages will be routed to the DLQ after max retry attempts are exceeded.
+        /// </remarks>
+        private async Task SetupDeadLetterQueueAsync(string originalExchangeName, string originalQueueName)
+        {
+            try
+            {
+                if (_channel == null)
+                    throw new InvalidOperationException("RabbitMQ channel is not initialized");
+
+                // Generate DLQ names based on original queue/exchange
+                if (!string.IsNullOrEmpty(originalExchangeName))
+                {
+                    _deadLetterExchangeName = $"{originalExchangeName}.dlx";
+                    _deadLetterQueueName = $"{originalQueueName}.dlq";
+                }
+                else
+                {
+                    _deadLetterExchangeName = $"{originalQueueName}.dlx";
+                    _deadLetterQueueName = $"{originalQueueName}.dlq";
+                }
+
+                _logger.Debug($"[RabbitMQBaseConsumer] Setting up DLQ infrastructure - DLX: {_deadLetterExchangeName}, DLQ: {_deadLetterQueueName}");
+
+                // Declare Dead Letter Exchange
+                await _channel.ExchangeDeclareAsync(_deadLetterExchangeName, ExchangeType.Direct, durable: false);
+
+                // Declare Dead Letter Queue
+                await _channel.QueueDeclareAsync(_deadLetterQueueName, durable: false, exclusive: false, autoDelete: false, arguments: null);
+
+                // Bind DLQ to DLX with appropriate routing key
+                var dlqRoutingKey = !string.IsNullOrEmpty(originalExchangeName) 
+                    ? $"{Queue.Key}.failed" 
+                    : $"{originalQueueName}.failed";
+
+                await _channel.QueueBindAsync(_deadLetterQueueName, _deadLetterExchangeName, dlqRoutingKey);
+
+                _logger.Info($"[RabbitMQBaseConsumer] DLQ infrastructure setup completed - DLQ: {_deadLetterQueueName}");
+            }
+            catch (Exception ex)
+            {
+                _logger.Error($"[RabbitMQBaseConsumer] Failed to setup DLQ infrastructure: {ex.Message}", ex);
+                throw new InvalidOperationException($"Failed to setup Dead Letter Queue: {ex.Message}", ex);
+            }
+        }
+
+        #endregion
+
+        #region Message Processing with Retry Logic
+
+        /// <summary>
+        /// Processes a message with retry logic and Dead Letter Queue handling.
+        /// Implements exponential backoff retry strategy for transient failures.
+        /// </summary>
+        /// <param name="body">The message body to process</param>
+        /// <param name="deliveryTag">The message delivery tag for acknowledgment</param>
+        /// <param name="routingKey">The routing key for DLQ routing</param>
+        /// <returns>A task representing the asynchronous message processing operation</returns>
+        private async Task ProcessMessageWithRetryAsync(string body, ulong deliveryTag, string routingKey)
+        {
+            if (_channel == null)
+                throw new InvalidOperationException("RabbitMQ channel is not initialized");
+
+            var attempt = 0;
+            Exception? lastException = null;
+
+            while (attempt <= MaxRetryAttempts)
+            {
+                try
+                {
+                    _logger.Debug($"[RabbitMQBaseConsumer] Processing message attempt {attempt + 1}/{MaxRetryAttempts + 1}, DeliveryTag: {deliveryTag}");
+
+                    // Process the message using the derived class implementation
+                    await HandleMessageAsync(body);
+
+                    // Acknowledge successful message processing
+                    await _channel.BasicAckAsync(deliveryTag, multiple: false);
+
+                    // Update health monitoring for successful processing
+                    UpdateHealthOnSuccess();
+
+                    _logger.Debug($"[RabbitMQBaseConsumer] Successfully processed and acknowledged message: {deliveryTag}");
+                    return; // Success - exit retry loop
+                }
+                catch (Exception ex)
+                {
+                    lastException = ex;
+                    attempt++;
+
+                    _logger.Warn($"[RabbitMQBaseConsumer] Message processing failed (attempt {attempt}/{MaxRetryAttempts + 1}), DeliveryTag: {deliveryTag}, Error: {ex.Message}");
+
+                    if (attempt <= MaxRetryAttempts)
+                    {
+                        // Calculate exponential backoff delay
+                        var delay = RetryDelayMilliseconds * (int)Math.Pow(2, attempt - 1);
+                        _logger.Debug($"[RabbitMQBaseConsumer] Retrying in {delay}ms...");
+                        
+                        await Task.Delay(delay);
+                    }
+                }
+            }
+
+            // All retries exhausted - handle failed message
+            UpdateHealthOnFailure();
+            await HandleFailedMessageAsync(body, deliveryTag, routingKey, lastException!);
+        }
+
+        /// <summary>
+        /// Handles a message that failed processing after all retry attempts.
+        /// Routes the message to Dead Letter Queue if enabled, otherwise rejects it.
+        /// </summary>
+        /// <param name="body">The failed message body</param>
+        /// <param name="deliveryTag">The message delivery tag</param>
+        /// <param name="routingKey">The original routing key</param>
+        /// <param name="exception">The exception that caused the failure</param>
+        /// <returns>A task representing the asynchronous failed message handling operation</returns>
+        private async Task HandleFailedMessageAsync(string body, ulong deliveryTag, string routingKey, Exception exception)
+        {
+            if (_channel == null)
+                throw new InvalidOperationException("RabbitMQ channel is not initialized");
+
+            try
+            {
+                if (EnableDeadLetterQueue && !string.IsNullOrEmpty(_deadLetterExchangeName))
+                {
+                    _logger.Error($"[RabbitMQBaseConsumer] Message failed all retry attempts, sending to DLQ - DeliveryTag: {deliveryTag}, Error: {exception.Message}", exception);
+
+                    // Publish message to Dead Letter Queue with failure metadata
+                    var failedMessage = new
+                    {
+                        OriginalBody = body,
+                        OriginalRoutingKey = routingKey,
+                        FailureReason = exception.Message,
+                        FailureStackTrace = exception.StackTrace,
+                        FailedAt = DateTime.UtcNow,
+                        RetryAttempts = MaxRetryAttempts,
+                        ConsumerType = this.GetType().Name
+                    };
+
+                    var messageJson = JsonConvert.SerializeObject(failedMessage);
+                    var messageBytes = Encoding.UTF8.GetBytes(messageJson);
+
+                    // Send to DLQ with failure routing key
+                    var dlqRoutingKey = $"{routingKey}.failed";
+                    await _channel.BasicPublishAsync(_deadLetterExchangeName, dlqRoutingKey, false, messageBytes);
+
+                    // Acknowledge the original message to remove it from the main queue
+                    await _channel.BasicAckAsync(deliveryTag, multiple: false);
+
+                    _logger.Info($"[RabbitMQBaseConsumer] Failed message sent to DLQ successfully - DeliveryTag: {deliveryTag}");
+                }
+                else
+                {
+                    _logger.Error($"[RabbitMQBaseConsumer] Message failed all retry attempts, DLQ disabled - rejecting message - DeliveryTag: {deliveryTag}, Error: {exception.Message}", exception);
+
+                    // Reject the message without requeuing since we can't process it
+                    await _channel.BasicNackAsync(deliveryTag, multiple: false, requeue: false);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.Error($"[RabbitMQBaseConsumer] Failed to handle failed message - DeliveryTag: {deliveryTag}, Error: {ex.Message}", ex);
+                
+                // As last resort, reject the message to prevent infinite blocking
+                await _channel.BasicNackAsync(deliveryTag, multiple: false, requeue: false);
             }
         }
 
@@ -306,42 +805,17 @@ namespace Mango.Message.RabbitMQ.Consumer.Base
             // Create an asynchronous consumer for handling messages
             var consumer = new AsyncEventingBasicConsumer(_channel);
 
-            // Configure the message received event handler with error handling
+            // Configure the message received event handler with error handling and DLQ support
             consumer.ReceivedAsync += async (ch, ea) =>
             {
-                try
-                {
-                    #region Message Processing
+                // Convert message body from bytes to UTF-8 string
+                var body = Encoding.UTF8.GetString(ea.Body.ToArray());
+                var routingKey = ea.RoutingKey ?? "";
 
-                    // Convert message body from bytes to UTF-8 string
-                    var body = Encoding.UTF8.GetString(ea.Body.ToArray());
+                _logger.Debug($"[RabbitMQBaseConsumer] Received message with delivery tag: {ea.DeliveryTag}");
 
-                    _logger.Debug($"[RabbitMQBaseConsumer] Received message with delivery tag: {ea.DeliveryTag}");
-
-                    // Process the message using the derived class implementation
-                    await HandleMessageAsync(body);
-
-                    // Acknowledge successful message processing to remove from queue
-                    await _channel.BasicAckAsync(ea.DeliveryTag, multiple: false);
-
-                    _logger.Debug($"[RabbitMQBaseConsumer] Successfully processed and acknowledged message: {ea.DeliveryTag}");
-
-                    #endregion
-                }
-                catch (Exception ex)
-                {
-                    #region Message Processing Error Handling
-
-                    _logger.Error($"[RabbitMQBaseConsumer] Error processing message {ea.DeliveryTag}: {ex.Message}", ex);
-
-                    // Note: In production environments, consider implementing:
-                    // - Dead letter queues for failed messages
-                    // - Retry mechanisms with exponential backoff
-                    // - Message rejection with requeue strategies
-                    // Currently, failed messages remain unacknowledged
-
-                    #endregion
-                }
+                // Process message with retry logic and DLQ handling
+                await ProcessMessageWithRetryAsync(body, ea.DeliveryTag, routingKey);
             };
 
             #endregion

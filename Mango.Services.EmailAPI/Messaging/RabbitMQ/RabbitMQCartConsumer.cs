@@ -63,6 +63,28 @@ namespace Mango.Services.EmailAPI.Messaging.RabbitMQ
 
         #endregion
 
+        #region Dead Letter Queue Configuration
+
+        /// <summary>
+        /// Enable Dead Letter Queue for failed cart email processing.
+        /// Failed messages will be sent to DLQ after retry attempts are exhausted.
+        /// </summary>
+        protected override bool EnableDeadLetterQueue => true;
+
+        /// <summary>
+        /// Set maximum retry attempts for cart email processing.
+        /// Cart emails are less critical, so fewer retries to avoid resource consumption.
+        /// </summary>
+        protected override int MaxRetryAttempts => 1;
+
+        /// <summary>
+        /// Set retry delay for cart email processing.
+        /// Shorter delay for email processing as they're typically quick operations.
+        /// </summary>
+        protected override int RetryDelayMilliseconds => 2000;
+
+        #endregion
+
         #region Message Handling
 
         /// <summary>

@@ -81,6 +81,28 @@ namespace Mango.Services.RewardAPI.Messaging.RabbitMQ
 
         #endregion
 
+        #region Dead Letter Queue Configuration
+
+        /// <summary>
+        /// Enable Dead Letter Queue for failed reward calculations.
+        /// Reward processing failures should be preserved for manual review.
+        /// </summary>
+        protected override bool EnableDeadLetterQueue => true;
+
+        /// <summary>
+        /// Set maximum retry attempts for reward calculations.
+        /// Reward calculations involve database operations, so moderate retry attempts.
+        /// </summary>
+        protected override int MaxRetryAttempts => 3;
+
+        /// <summary>
+        /// Set retry delay for reward calculations.
+        /// Standard delay for database-related operations.
+        /// </summary>
+        protected override int RetryDelayMilliseconds => 5000;
+
+        #endregion
+
         #region Message Handling
 
         /// <summary>

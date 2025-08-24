@@ -62,6 +62,28 @@ namespace Mango.Services.EmailAPI.Messaging.RabbitMQ
 
         #endregion
 
+        #region Dead Letter Queue Configuration
+
+        /// <summary>
+        /// Enable Dead Letter Queue for failed registration email processing.
+        /// Failed messages will be sent to DLQ after retry attempts are exhausted.
+        /// </summary>
+        protected override bool EnableDeadLetterQueue => true;
+
+        /// <summary>
+        /// Set maximum retry attempts for registration email processing.
+        /// Email failures are typically due to network issues or service unavailability.
+        /// </summary>
+        protected override int MaxRetryAttempts => 2;
+
+        /// <summary>
+        /// Set retry delay for registration email processing.
+        /// Shorter delay for email processing as they're typically quick operations.
+        /// </summary>
+        protected override int RetryDelayMilliseconds => 3000;
+
+        #endregion
+
         #region Message Handling
 
         /// <summary>

@@ -81,6 +81,28 @@ namespace Mango.Services.OrderAPI.Messaging.RabbitMQ
 
         #endregion
 
+        #region Dead Letter Queue Configuration
+
+        /// <summary>
+        /// Enable Dead Letter Queue for failed order status updates.
+        /// Order updates are critical for business operations, so DLQ is essential.
+        /// </summary>
+        protected override bool EnableDeadLetterQueue => true;
+
+        /// <summary>
+        /// Set maximum retry attempts for order status updates.
+        /// Order processing is critical, so more retry attempts are warranted.
+        /// </summary>
+        protected override int MaxRetryAttempts => 5;
+
+        /// <summary>
+        /// Set retry delay for order status updates.
+        /// Longer delay for database operations which might need time to recover.
+        /// </summary>
+        protected override int RetryDelayMilliseconds => 10000;
+
+        #endregion
+
         #region Message Handling
 
         /// <summary>

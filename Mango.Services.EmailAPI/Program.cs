@@ -4,7 +4,9 @@ using Mango.Services.EmailAPI.Data;
 using Mango.Services.EmailAPI.Messaging.RabbitMQ;
 using Mango.Services.EmailAPI.Service;
 using Mango.Services.EmailAPI.Service.IService;
+using Mango.Message.RabbitMQ.HealthChecks;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
 using System.Reflection;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -21,6 +23,9 @@ builder.Services.AddDbContext<AppDbContext>(option =>
 builder.Services.AddSingleton<IEmailService, EmailService>();
 builder.Services.AddHostedService<RabbitMQAuthConsumer>();
 builder.Services.AddHostedService<RabbitMQCartConsumer>();
+
+// Add Health Checks
+builder.Services.AddHealthChecks();
 
 builder.Services.AddControllers();
 
@@ -40,6 +45,9 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 
 app.UseAuthorization();
+
+// Add Health Check endpoint
+app.MapHealthChecks("/health");
 
 app.MapControllers();
 await DbInitializer.InitDb(app);
